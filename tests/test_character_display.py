@@ -1,6 +1,6 @@
 import unittest
 
-from weathercal.displays.character import CharacterDisplay
+from weathercal.displays.character import CharacterDisplay, _pad
 from weathercal.pages import PageRenderer
 from weathercal.state import WeatherState
 
@@ -25,6 +25,11 @@ class FakeLCD:
 
 
 class CharacterDisplayTests(unittest.TestCase):
+    def test_padding_does_not_depend_on_cpython_string_helpers(self):
+        self.assertEqual(_pad("abc", 5, "left"), "abc  ")
+        self.assertEqual(_pad("abc", 5, "right"), "  abc")
+        self.assertEqual(_pad("abc", 6, "center"), " abc  ")
+
     def state(self):
         state = WeatherState()
         state.update(

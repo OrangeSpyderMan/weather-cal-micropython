@@ -73,11 +73,11 @@ class CharacterDisplay(Display):
         width = min(width or self.columns - col, self.columns - col)
         value = str(value)
         if align == "right":
-            value = value[-width:].rjust(width)
+            value = _pad(value[-width:], width, "right")
         elif align == "center":
-            value = value[:width].center(width)
+            value = _pad(value[:width], width, "center")
         else:
-            value = value[:width].ljust(width)
+            value = _pad(value[:width], width, "left")
         for index, character in enumerate(value):
             self.buffer[row][col + index] = character
 
@@ -90,3 +90,13 @@ class CharacterDisplay(Display):
                 return None
             self.glyph_slots[name] = len(self.glyph_slots)
         return self.glyph_slots[name]
+
+
+def _pad(value, width, align):
+    padding = max(0, width - len(value))
+    if align == "right":
+        return (" " * padding) + value
+    if align == "center":
+        left = padding // 2
+        return (" " * left) + value + (" " * (padding - left))
+    return value + (" " * padding)
