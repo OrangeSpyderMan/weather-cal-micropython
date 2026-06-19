@@ -11,8 +11,8 @@ displays can be added later.
 ## Initial hardware
 
 - 52Pi EP-0164 breadboard kit, 320×240 ILI9341 TFT
-- Freenove/HD44780 1602 character LCD using direct 4-bit GPIO
-- Freenove/HD44780 2004 character LCD using direct 4-bit GPIO
+- Freenove/HD44780 1602 character LCD with PCF8574 I²C backpack
+- Freenove/HD44780 2004 character LCD with PCF8574 I²C backpack
 - USB serial terminal or plain serial log output
 
 The project includes original ILI9341, HD44780, MQTT 3.1.1, bitmap-icon, and
@@ -133,15 +133,31 @@ Value widgets use dotted paths such as `current.temperature`,
 
 ## Character LCD wiring
 
-The HD44780 driver uses direct 4-bit mode:
+The Freenove profiles use a PCF8574-compatible I²C backpack. Their defaults are:
 
 ```text
-RS, Enable, D4, D5, D6, D7
+I2C 0
+SDA GP0
+SCL GP1
+100 kHz
+address auto-detect (0x27 or 0x3f)
 ```
 
-Pin numbers are entirely configurable. The example uses GP10–GP15 as a clear
-starting point; adjust them to your Freenove wiring. An optional GPIO-controlled
-backlight pin may be configured.
+The generator prompts for the bus and pins. It can scan the two common
+addresses automatically, or accept an explicit address:
+
+```bash
+python3 tools/generate_config.py \
+  --profile freenove-2004 \
+  --i2c-id 1 \
+  --i2c-sda 6 \
+  --i2c-scl 7 \
+  --i2c-address 0x3f
+```
+
+The lower-level HD44780 driver still supports direct 4-bit GPIO by setting
+`DEVICE["transport"] = "gpio"` and supplying `rs`, `enable`, and `d4`–`d7`
+pins.
 
 ## Serial display
 

@@ -47,6 +47,14 @@ def build_parser():
         action="store_true",
         help="disable ANSI screen clearing for the serial profile",
     )
+    parser.add_argument("--i2c-id", type=int)
+    parser.add_argument("--i2c-sda", type=int)
+    parser.add_argument("--i2c-scl", type=int)
+    parser.add_argument(
+        "--i2c-address",
+        type=i2c_address,
+        help="LCD backpack address such as 0x27, or auto",
+    )
     parser.add_argument("--mqtt-host")
     parser.add_argument("--mqtt-port", type=int)
     parser.add_argument("--mqtt-base-topic")
@@ -114,6 +122,38 @@ def collect_values(args, input_fn=input, password_fn=getpass.getpass):
         config["DEVICE"]["page_profile"] = page_profile
     elif profile == "serial" and args.serial_plain:
         config["DEVICE"]["ansi"] = False
+    elif profile.startswith("freenove-"):
+        i2c = config["DEVICE"]["i2c"]
+        i2c["i2c_id"] = numeric_setting(
+            args.i2c_id,
+            "I2C bus ID",
+            i2c["i2c_id"],
+            args.non_interactive,
+            input_fn,
+        )
+        i2c["sda"] = numeric_setting(
+            args.i2c_sda,
+            "I2C SDA GPIO",
+            i2c["sda"],
+            args.non_interactive,
+            input_fn,
+        )
+        i2c["scl"] = numeric_setting(
+            args.i2c_scl,
+            "I2C SCL GPIO",
+            i2c["scl"],
+            args.non_interactive,
+            input_fn,
+        )
+        if args.i2c_address is not None:
+            i2c["address"] = args.i2c_address
+        elif not args.non_interactive:
+            answer = prompt(
+                "I2C address (auto, 0x27, or 0x3f)",
+                "auto",
+                input_fn,
+            )
+            i2c["address"] = i2c_address(answer)
     mqtt = config["MQTT"]
     runtime = config["RUNTIME"]
 
@@ -309,6 +349,37 @@ def integer_value(
     if not 1 <= result <= 65535:
         raise SystemExit("ERROR: {} must be from 1 to 65535".format(label))
     return result
+
+
+def numeric_setting(
+    supplied,
+    label,
+    default,
+    non_interactive,
+    input_fn,
+):
+    if supplied is not None:
+        return supplied
+    if non_interactive:
+        return default
+    try:
+        return int(prompt(label, default, input_fn))
+    except ValueError:
+        raise SystemExit("ERROR: {} must be an integer".format(label))
+
+
+def i2c_address(value):
+    if value is None or str(value).lower() == "auto":
+        return None
+    try:
+        address = int(str(value), 0)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "I2C address must be auto or an integer such as 0x27"
+        )
+    if not 0 <= address <= 0x7F:
+        raise argparse.ArgumentTypeError("I2C address must be from 0 to 0x7f")
+    return address
 
 
 def prompt(label, default, input_fn):

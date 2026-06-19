@@ -1,5 +1,5 @@
 from .character import CharacterDisplay
-from .hd44780 import Hd44780, Hd44780Bus
+from .hd44780 import Hd44780, Hd44780Bus, Pcf8574Bus
 from .ili9341 import Ili9341Display, Ili9341Surface
 from .serial import SerialDisplay
 
@@ -17,7 +17,15 @@ def create_display(device):
             )
             return Ili9341Display(surface)
         if driver == "hd44780":
-            bus = Hd44780Bus(device["pins"])
+            transport = device.get("transport", "gpio")
+            if transport == "pcf8574":
+                bus = Pcf8574Bus(device["i2c"])
+            elif transport == "gpio":
+                bus = Hd44780Bus(device["pins"])
+            else:
+                raise ValueError(
+                    "unsupported HD44780 transport: {}".format(transport)
+                )
             lcd = Hd44780(bus, device["columns"], device["rows"])
             return CharacterDisplay(
                 lcd,

@@ -18,6 +18,18 @@ def validate_config(config):
         raise ConfigError("unsupported DEVICE.driver: {}".format(display_type))
     if display_type == "ili9341" and device.get("rotation", 1) not in (0, 1, 2, 3):
         raise ConfigError("DEVICE.rotation must be 0, 1, 2, or 3")
+    if display_type == "hd44780":
+        transport = device.get("transport", "gpio")
+        if transport not in ("gpio", "pcf8574"):
+            raise ConfigError("unsupported HD44780 transport: {}".format(transport))
+        if transport == "pcf8574":
+            i2c = device.get("i2c", {})
+            for key in ("sda", "scl"):
+                if key not in i2c:
+                    raise ConfigError("DEVICE.i2c.{} is required".format(key))
+            address = i2c.get("address")
+            if address is not None and not 0 <= address <= 0x7F:
+                raise ConfigError("DEVICE.i2c.address must be 0..0x7f")
     profile_name = device.get("page_profile")
     if profile_name not in config["PAGE_PROFILES"]:
         raise ConfigError("unknown page profile: {}".format(profile_name))

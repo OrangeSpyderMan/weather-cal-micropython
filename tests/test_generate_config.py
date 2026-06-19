@@ -18,6 +18,10 @@ def arguments(**overrides):
         "profile": "freenove-1602",
         "orientation": None,
         "serial_plain": False,
+        "i2c_id": None,
+        "i2c_sda": None,
+        "i2c_scl": None,
+        "i2c_address": None,
         "mqtt_host": "mqtt.local",
         "mqtt_port": 1883,
         "mqtt_base_topic": "inkplate/weather-calendar",
@@ -50,6 +54,9 @@ class GenerateConfigTests(unittest.TestCase):
         self.assertEqual(config["MQTT"]["host"], "mqtt.local")
         self.assertEqual(config["MQTT"]["client_id"], "kitchen-weather")
         self.assertEqual(config["RUNTIME"]["default_page_duration_s"], 12)
+        self.assertEqual(config["DEVICE"]["transport"], "pcf8574")
+        self.assertEqual(config["DEVICE"]["i2c"]["sda"], 0)
+        self.assertIsNone(config["DEVICE"]["i2c"]["address"])
         self.assertEqual(secrets["WIFI_SSID"], "home-wifi")
 
     def test_interactive_profile_and_credentials(self):
@@ -163,3 +170,30 @@ class GenerateConfigTests(unittest.TestCase):
         _, config, _ = generate_config.collect_values(args)
 
         self.assertFalse(config["DEVICE"]["ansi"])
+
+    def test_freenove_i2c_overrides(self):
+        args = arguments(
+            profile="freenove-2004",
+            i2c_id=1,
+            i2c_sda=6,
+            i2c_scl=7,
+            i2c_address=0x3F,
+        )
+
+        _, config, _ = generate_config.collect_values(args)
+
+        self.assertEqual(
+            config["DEVICE"]["i2c"],
+            {
+                "i2c_id": 1,
+                "sda": 6,
+                "scl": 7,
+                "frequency": 100000,
+                "address": 0x3F,
+                "backlight": True,
+            },
+        )
+
+    def test_i2c_address_parser(self):
+        self.assertIsNone(generate_config.i2c_address("auto"))
+        self.assertEqual(generate_config.i2c_address("0x27"), 0x27)

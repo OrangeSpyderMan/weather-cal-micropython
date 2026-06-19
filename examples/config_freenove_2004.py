@@ -1,17 +1,18 @@
 DEVICE = {
     "driver": "hd44780",
+    "transport": "pcf8574",
     "page_profile": "lcd2004",
     "columns": 20,
     "rows": 4,
     "serial_fallback": True,
-    "pins": {
-        "rs": 10,
-        "enable": 11,
-        "d4": 12,
-        "d5": 13,
-        "d6": 14,
-        "d7": 15,
-        "backlight": None,
+    "i2c": {
+        "i2c_id": 0,
+        "sda": 0,
+        "scl": 1,
+        "frequency": 100000,
+        # None scans common backpack addresses 0x27 and 0x3f.
+        "address": None,
+        "backlight": True,
     },
 }
 
