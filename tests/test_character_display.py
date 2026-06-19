@@ -117,6 +117,37 @@ class CharacterDisplayTests(unittest.TestCase):
         self.assertEqual(lcd.rows[2], "                    ")
         self.assertEqual(lcd.rows[3], "                    ")
 
+    def test_1602_hourly_preserves_probability_suffix_at_extreme_values(self):
+        state = WeatherState()
+        state.update(
+            "hourly",
+            [
+                {
+                    "dt": "2026-06-19T23:59:00Z",
+                    "temperature": {"value": -99.9, "unit": "°C"},
+                    "rain_probability": 100,
+                }
+            ],
+        )
+        lcd = FakeLCD()
+        display = CharacterDisplay(lcd, 16, 2)
+        PageRenderer(display).render(
+            {
+                "id": "forecast",
+                "widgets": [
+                    {
+                        "type": "hourly_table",
+                        "row": 0,
+                        "col": 0,
+                        "rows": 2,
+                    }
+                ],
+            },
+            state,
+        )
+
+        self.assertEqual(lcd.rows[0], "23:59 -100C 100%")
+
     def test_2004_metadata_abbreviates_source_and_keeps_time(self):
         lcd = FakeLCD()
         display = CharacterDisplay(lcd, 20, 4)
@@ -138,3 +169,25 @@ class CharacterDisplayTests(unittest.TestCase):
         )
 
         self.assertEqual(lcd.rows[3], "    OWM v4 12:34    ")
+
+    def test_1602_metadata_abbreviates_source_and_keeps_time(self):
+        lcd = FakeLCD()
+        display = CharacterDisplay(lcd, 16, 2)
+        renderer = PageRenderer(display)
+        renderer.render(
+            {
+                "id": "status",
+                "widgets": [
+                    {
+                        "type": "metadata",
+                        "row": 0,
+                        "col": 0,
+                        "width": 16,
+                        "align": "center",
+                    }
+                ],
+            },
+            self.state(),
+        )
+
+        self.assertEqual(lcd.rows[0], "  OWM v4 12:34  ")

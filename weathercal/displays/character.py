@@ -41,15 +41,22 @@ class CharacterDisplay(Display):
     def hourly(self, widget, entries):
         start = widget.get("row", 0)
         count = widget.get("rows", self.rows - start)
+        column = widget.get("col", 0)
+        width = min(
+            widget.get("width", self.columns - column),
+            self.columns - column,
+        )
         for offset, item in enumerate(entries[:count]):
             stamp = item.get("dt", "")
             hour = stamp[11:16] if len(stamp) >= 16 else "--:--"
-            text = "{} {} {}".format(
-                hour,
-                temperature(item.get("temperature")),
-                percent(item.get("rain_probability")),
-            )
-            self._write(start + offset, widget.get("col", 0), text)
+            temperature_value = item.get("temperature")
+            rain_probability = percent(item.get("rain_probability"))
+            temperature_text = temperature(temperature_value)
+            text = "{} {} {}".format(hour, temperature_text, rain_probability)
+            if len(text) > width:
+                temperature_text = _compact_temperature(temperature_value)
+                text = "{} {} {}".format(hour, temperature_text, rain_probability)
+            self._write(start + offset, column, text, width)
 
     def badge(self, value, secondary=False):
         row = self.rows - 1
@@ -100,3 +107,11 @@ def _pad(value, width, align):
         left = padding // 2
         return (" " * left) + value + (" " * (padding - left))
     return value + (" " * padding)
+
+
+def _compact_temperature(value):
+    if not isinstance(value, dict) or value.get("value") is None:
+        return temperature(value)
+    number = int(round(float(value["value"])))
+    suffix = "F" if "F" in value.get("unit", "") else "C"
+    return "{}{}".format(number, suffix)
