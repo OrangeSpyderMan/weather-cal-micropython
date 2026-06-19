@@ -40,10 +40,7 @@ class PageRenderer:
             self.display.hourly(widget, state.data.get("hourly", []))
         elif widget_type == "metadata":
             status = state.data.get("weather_status", {})
-            text = "{} {}".format(
-                status.get("source", ""),
-                status.get("generated_at", "")[11:16],
-            ).strip()
+            text = _metadata_text(status, widget.get("width"))
             self.display.text(widget, text)
         elif widget_type == "server_status":
             server = state.data.get("server", {})
@@ -58,3 +55,23 @@ def pages_affected(pages, changed_topic):
         for page in pages
         if changed_topic in page_dependencies(page)
     }
+
+
+SOURCE_LABELS = {
+    "openweathermap": "OWM",
+    "openweathermapv3": "OWM v3",
+    "openweathermapv4": "OWM v4",
+}
+
+
+def _metadata_text(status, width=None):
+    source = str(status.get("source", ""))
+    source = SOURCE_LABELS.get(source.lower(), source)
+    generated_at = status.get("generated_at", "")
+    clock = generated_at[11:16] if len(generated_at) >= 16 else ""
+    if not width:
+        return "{} {}".format(source, clock).strip()
+    if not clock:
+        return source[:width]
+    source_width = max(0, width - len(clock) - 1)
+    return "{} {}".format(source[:source_width], clock).strip()

@@ -54,6 +54,13 @@ class CharacterDisplayTests(unittest.TestCase):
                 },
             ],
         )
+        state.update(
+            "weather_status",
+            {
+                "source": "openweathermapv4",
+                "generated_at": "2026-06-19T12:34:00Z",
+            },
+        )
         return state
 
     def test_1602_golden_buffer(self):
@@ -109,3 +116,25 @@ class CharacterDisplayTests(unittest.TestCase):
         self.assertEqual(lcd.rows[1], "15:00 15C 20%       ")
         self.assertEqual(lcd.rows[2], "                    ")
         self.assertEqual(lcd.rows[3], "                    ")
+
+    def test_2004_metadata_abbreviates_source_and_keeps_time(self):
+        lcd = FakeLCD()
+        display = CharacterDisplay(lcd, 20, 4)
+        renderer = PageRenderer(display)
+        renderer.render(
+            {
+                "id": "now",
+                "widgets": [
+                    {
+                        "type": "metadata",
+                        "row": 3,
+                        "col": 0,
+                        "width": 20,
+                        "align": "center",
+                    }
+                ],
+            },
+            self.state(),
+        )
+
+        self.assertEqual(lcd.rows[3], "    OWM v4 12:34    ")
