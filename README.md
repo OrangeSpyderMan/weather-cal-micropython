@@ -52,14 +52,31 @@ Only topics required by the selected page profile are subscribed.
 
 1. Flash current Pico W MicroPython firmware.
 2. Clone this repository.
-3. Copy an example display profile and create a secrets file:
+3. Run the configuration generator:
 
 ```bash
-cp examples/config_ep0164.py config.py
-cp secrets.py.example secrets.py
+python3 tools/generate_config.py
 ```
 
-Available profiles:
+It prompts for the display profile, broker, page timing, Wi-Fi credentials, and
+optional MQTT credentials. It writes `config.py` and a mode-0600 `secrets.py`,
+refusing to overwrite either unless `--force` is supplied. At the end it can
+deploy the generated configuration and application directly with `mpremote`.
+
+For scripted setup:
+
+```bash
+python3 tools/generate_config.py \
+  --non-interactive \
+  --profile ep0164 \
+  --mqtt-host 192.168.1.10 \
+  --wifi-ssid your-wifi \
+  --wifi-password your-password \
+  --deploy \
+  --device /dev/ttyACM0
+```
+
+Available profiles are:
 
 ```text
 examples/config_ep0164.py
@@ -67,7 +84,7 @@ examples/config_freenove_1602.py
 examples/config_freenove_2004.py
 ```
 
-4. Edit the MQTT host, pins, Wi-Fi credentials, and optional MQTT credentials.
+4. Review the generated display pins and page definitions.
 5. Deploy with `mpremote`:
 
 ```bash

@@ -1,0 +1,336 @@
+#!/usr/bin/env python3
+import argparse
+import getpass
+import os
+import pprint
+import runpy
+import sys
+from copy import deepcopy
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tools"))
+
+from weathercal.configuration import validate_config  # noqa: E402
+from deploy import deploy  # noqa: E402
+
+
+PROFILES = {
+    "ep0164": ROOT / "examples" / "config_ep0164.py",
+    "freenove-1602": ROOT / "examples" / "config_freenove_1602.py",
+    "freenove-2004": ROOT / "examples" / "config_freenove_2004.py",
+}
+CONFIG_NAMES = ("DEVICE", "MQTT", "RUNTIME", "BUTTONS", "PAGE_PROFILES")
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description="Generate config.py and secrets.py for Weather Cal."
+    )
+    parser.add_argument("--profile", choices=sorted(PROFILES))
+    parser.add_argument("--mqtt-host")
+    parser.add_argument("--mqtt-port", type=int)
+    parser.add_argument("--mqtt-base-topic")
+    parser.add_argument("--mqtt-client-id")
+    parser.add_argument("--mqtt-user")
+    parser.add_argument("--mqtt-password")
+    parser.add_argument("--wifi-ssid")
+    parser.add_argument("--wifi-password")
+    parser.add_argument("--page-duration", type=float)
+    parser.add_argument("--stale-after", type=float)
+    parser.add_argument("--config-output", type=Path, default=ROOT / "config.py")
+    parser.add_argument(
+        "--secrets-output",
+        type=Path,
+        default=ROOT / "secrets.py",
+    )
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help="require essential values on the command line",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="replace existing output files",
+    )
+    parser.add_argument(
+        "--deploy",
+        action="store_true",
+        help="deploy generated files to the Pico W with mpremote",
+    )
+    parser.add_argument(
+        "--device",
+        help="mpremote device selector, for example /dev/ttyACM0",
+    )
+    return parser
+
+
+def load_profile(name):
+    values = runpy.run_path(str(PROFILES[name]))
+    return {key: deepcopy(values[key]) for key in CONFIG_NAMES}
+
+
+def collect_values(args, input_fn=input, password_fn=getpass.getpass):
+    profile = args.profile
+    if not profile:
+        if args.non_interactive:
+            raise SystemExit("ERROR: --profile is required with --non-interactive")
+        profile = choose_profile(input_fn)
+
+    config = load_profile(profile)
+    mqtt = config["MQTT"]
+    runtime = config["RUNTIME"]
+
+    mqtt["host"] = value(
+        args.mqtt_host,
+        "MQTT broker host",
+        mqtt["host"],
+        args.non_interactive,
+        input_fn,
+        required=True,
+    )
+    mqtt["port"] = integer_value(
+        args.mqtt_port,
+        "MQTT broker port",
+        mqtt.get("port", 1883),
+        args.non_interactive,
+        input_fn,
+    )
+    mqtt["base_topic"] = value(
+        args.mqtt_base_topic,
+        "MQTT base topic",
+        mqtt["base_topic"],
+        args.non_interactive,
+        input_fn,
+    )
+    mqtt["client_id"] = value(
+        args.mqtt_client_id,
+        "MQTT client ID",
+        mqtt["client_id"],
+        args.non_interactive,
+        input_fn,
+    )
+    if args.page_duration is not None:
+        runtime["default_page_duration_s"] = args.page_duration
+    elif not args.non_interactive:
+        runtime["default_page_duration_s"] = float(
+            prompt(
+                "Default page duration (seconds)",
+                runtime["default_page_duration_s"],
+                input_fn,
+            )
+        )
+    if args.stale_after is not None:
+        runtime["stale_after_s"] = args.stale_after
+    elif not args.non_interactive:
+        runtime["stale_after_s"] = float(
+            prompt(
+                "Mark data stale after (seconds)",
+                runtime["stale_after_s"],
+                input_fn,
+            )
+        )
+
+    wifi_ssid = value(
+        args.wifi_ssid,
+        "Wi-Fi SSID",
+        None,
+        args.non_interactive,
+        input_fn,
+        required=True,
+    )
+    wifi_password = secret_value(
+        args.wifi_password,
+        "Wi-Fi password",
+        args.non_interactive,
+        password_fn,
+        required=True,
+    )
+    mqtt_user = optional_value(
+        args.mqtt_user,
+        "MQTT username (blank for anonymous)",
+        args.non_interactive,
+        input_fn,
+    )
+    mqtt_password = None
+    if mqtt_user:
+        mqtt_password = secret_value(
+            args.mqtt_password,
+            "MQTT password",
+            args.non_interactive,
+            password_fn,
+            required=False,
+        )
+
+    validate_config(config)
+    secrets = {
+        "WIFI_SSID": wifi_ssid,
+        "WIFI_PASSWORD": wifi_password,
+        "MQTT_USER": mqtt_user,
+        "MQTT_PASSWORD": mqtt_password,
+    }
+    return profile, config, secrets
+
+
+def choose_profile(input_fn):
+    choices = list(sorted(PROFILES))
+    print("Display profiles:")
+    for index, name in enumerate(choices, 1):
+        print("  {}) {}".format(index, name))
+    while True:
+        answer = input_fn("Select profile [1]: ").strip() or "1"
+        try:
+            return choices[int(answer) - 1]
+        except (ValueError, IndexError):
+            print("Enter a number from 1 to {}.".format(len(choices)))
+
+
+def value(
+    supplied,
+    label,
+    default,
+    non_interactive,
+    input_fn,
+    required=False,
+):
+    if supplied is not None:
+        return supplied
+    if non_interactive:
+        if required and not default:
+            raise SystemExit(
+                "ERROR: {} is required with --non-interactive".format(label)
+            )
+        return default
+    result = prompt(label, default, input_fn)
+    if required and not result:
+        raise SystemExit("ERROR: {} is required".format(label))
+    return result
+
+
+def optional_value(supplied, label, non_interactive, input_fn):
+    if supplied is not None:
+        return supplied or None
+    if non_interactive:
+        return None
+    return input_fn("{}: ".format(label)).strip() or None
+
+
+def secret_value(
+    supplied,
+    label,
+    non_interactive,
+    password_fn,
+    required,
+):
+    if supplied is not None:
+        return supplied
+    if non_interactive:
+        if required:
+            raise SystemExit(
+                "ERROR: {} is required with --non-interactive".format(label)
+            )
+        return None
+    result = password_fn("{}: ".format(label))
+    if required and not result:
+        raise SystemExit("ERROR: {} is required".format(label))
+    return result or None
+
+
+def integer_value(
+    supplied,
+    label,
+    default,
+    non_interactive,
+    input_fn,
+):
+    if supplied is not None:
+        result = supplied
+    elif non_interactive:
+        result = default
+    else:
+        try:
+            result = int(prompt(label, default, input_fn))
+        except ValueError:
+            raise SystemExit("ERROR: {} must be an integer".format(label))
+    if not 1 <= result <= 65535:
+        raise SystemExit("ERROR: {} must be from 1 to 65535".format(label))
+    return result
+
+
+def prompt(label, default, input_fn):
+    suffix = " [{}]".format(default) if default is not None else ""
+    result = input_fn("{}{}: ".format(label, suffix)).strip()
+    return result if result else default
+
+
+def render_config(profile, config):
+    lines = [
+        "# Generated by tools/generate_config.py",
+        "# Display profile: {}".format(profile),
+        "",
+    ]
+    for name in CONFIG_NAMES:
+        lines.append("{} = {}".format(name, pprint.pformat(config[name], width=88)))
+        lines.append("")
+    return "\n".join(lines)
+
+
+def render_secrets(secrets):
+    return (
+        "# Generated by tools/generate_config.py\n"
+        "WIFI_SSID = {!r}\n"
+        "WIFI_PASSWORD = {!r}\n"
+        "MQTT_USER = {!r}\n"
+        "MQTT_PASSWORD = {!r}\n"
+    ).format(
+        secrets["WIFI_SSID"],
+        secrets["WIFI_PASSWORD"],
+        secrets["MQTT_USER"],
+        secrets["MQTT_PASSWORD"],
+    )
+
+
+def write_outputs(args, profile, config, secrets):
+    for path in (args.config_output, args.secrets_output):
+        if path.exists() and not args.force:
+            raise SystemExit(
+                "ERROR: {} exists; use --force to replace it".format(path)
+            )
+    args.config_output.parent.mkdir(parents=True, exist_ok=True)
+    args.secrets_output.parent.mkdir(parents=True, exist_ok=True)
+    args.config_output.write_text(
+        render_config(profile, config),
+        encoding="utf-8",
+    )
+    args.secrets_output.write_text(
+        render_secrets(secrets),
+        encoding="utf-8",
+    )
+    os.chmod(args.secrets_output, 0o600)
+
+
+def main():
+    args = build_parser().parse_args()
+    profile, config, secrets = collect_values(args)
+    write_outputs(args, profile, config, secrets)
+    print("Generated {}".format(args.config_output))
+    print("Generated {} (mode 0600)".format(args.secrets_output))
+    should_deploy = args.deploy
+    if not args.non_interactive and not should_deploy:
+        answer = input("Deploy to the Pico W now? [y/N]: ").strip().lower()
+        should_deploy = answer in ("y", "yes")
+    if should_deploy:
+        deploy(
+            args.config_output,
+            args.secrets_output,
+            device=args.device,
+        )
+    else:
+        print("Review display pins, then deploy with tools/deploy.py.")
+
+
+if __name__ == "__main__":
+    main()
