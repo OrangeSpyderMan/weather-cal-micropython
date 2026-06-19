@@ -13,6 +13,7 @@ WIDGET_DEPENDENCIES = {
     "value": (),
     "icon": ("current",),
     "current_summary": ("current",),
+    "weather_alert": ("current",),
     "hourly_table": ("hourly",),
     "metadata": ("weather_status",),
     "server_status": ("server_status",),

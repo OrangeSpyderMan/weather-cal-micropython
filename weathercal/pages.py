@@ -3,6 +3,9 @@ from .icons import icon_text, semantic_icon
 from .topics import page_dependencies
 
 
+ALERT_MARKER = "/!\\"
+
+
 class PageRenderer:
     def __init__(self, display):
         self.display = display
@@ -35,7 +38,16 @@ class PageRenderer:
                 temperature(current.get("temperature")),
                 icon_text(current.get("icon")),
             ]
+            if current.get("alerts", {}).get("active", False):
+                pieces.append(ALERT_MARKER)
             self.display.summary(widget, pieces)
+        elif widget_type == "weather_alert":
+            current = state.data.get("current", {})
+            if current.get("alerts", {}).get("active", False):
+                self.display.text(
+                    widget,
+                    widget.get("text", ALERT_MARKER),
+                )
         elif widget_type == "hourly_table":
             self.display.hourly(widget, state.data.get("hourly", []))
         elif widget_type == "metadata":

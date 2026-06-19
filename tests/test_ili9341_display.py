@@ -99,3 +99,30 @@ class Ili9341DisplayTests(unittest.TestCase):
 
         self.assertIn(("rect", 250, 204, 70, 18, 63488), surface.commands)
         self.assertIn(("rect", 250, 222, 70, 18, 63488), surface.commands)
+
+    def test_active_weather_alert_draws_warning_marker(self):
+        surface = RecordingSurface()
+        display = Ili9341Display(surface)
+        state = WeatherState()
+        state.update("current", {"alerts": {"active": True}})
+
+        PageRenderer(display).render(
+            {
+                "id": "now",
+                "widgets": [
+                    {
+                        "type": "weather_alert",
+                        "x": 278,
+                        "y": 12,
+                        "scale": 2,
+                        "color": "red",
+                    }
+                ],
+            },
+            state,
+        )
+
+        self.assertIn(
+            ("text", 278, 12, "/!\\", 63488, 2),
+            surface.commands,
+        )

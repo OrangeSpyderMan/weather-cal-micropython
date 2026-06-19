@@ -19,6 +19,7 @@ class SerialDisplayTests(unittest.TestCase):
             {
                 "temperature": {"value": 12, "unit": "C"},
                 "icon": "icon/rain.png",
+                "alerts": {"active": True},
             },
         )
         state.update(
@@ -43,7 +44,7 @@ class SerialDisplayTests(unittest.TestCase):
         )
 
         self.assertEqual(output[0], "Weather Cal - now [STALE]")
-        self.assertIn("Now: 12C RAIN", output)
+        self.assertIn("Now: 12C RAIN /!\\", output)
         self.assertIn("Wind: 18km/h W", output)
 
     def test_ansi_mode_clears_terminal(self):

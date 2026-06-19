@@ -30,11 +30,34 @@ class CharacterDisplay(Display):
         self._write(widget.get("row", 0), widget.get("col", 0), value)
 
     def summary(self, widget, pieces):
+        width = widget.get("width")
+        if width is None:
+            width = self.columns - widget.get("col", 0)
+        value = " ".join(pieces)
+        if pieces and pieces[-1] == "/!\\" and len(value) > width:
+            pieces = list(pieces)
+            temperature_text = pieces[0]
+            if (
+                len(temperature_text) > 2
+                and temperature_text[-1] in ("C", "F")
+                and "." in temperature_text
+            ):
+                try:
+                    pieces[0] = "{}{}".format(
+                        int(round(float(temperature_text[:-1]))),
+                        temperature_text[-1],
+                    )
+                except ValueError:
+                    pass
+            value = " ".join(pieces)
+        if pieces and pieces[-1] == "/!\\" and len(value) > width:
+            body_width = max(0, width - 4)
+            value = "{} /!\\".format(" ".join(pieces[:-1])[:body_width])
         self._write(
             widget.get("row", 0),
             widget.get("col", 0),
-            " ".join(pieces),
-            widget.get("width"),
+            value,
+            width,
             widget.get("align", "center"),
         )
 

@@ -60,6 +60,13 @@ LANDSCAPE_PAGES = [
                     "color": "cyan",
                 },
                 {
+                    "type": "weather_alert",
+                    "x": 278,
+                    "y": 12,
+                    "scale": 2,
+                    "color": "red",
+                },
+                {
                     "type": "icon",
                     "path": "current.icon",
                     "x": 20,
@@ -154,6 +161,13 @@ PORTRAIT_PAGES = [
                 "y": 12,
                 "scale": 3,
                 "color": "cyan",
+            },
+            {
+                "type": "weather_alert",
+                "x": 198,
+                "y": 14,
+                "scale": 2,
+                "color": "red",
             },
             {
                 "type": "icon",

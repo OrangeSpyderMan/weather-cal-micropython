@@ -150,6 +150,7 @@ Supported widget types:
 - `value`
 - `icon`
 - `current_summary`
+- `weather_alert`
 - `hourly_table`
 - `metadata`
 - `server_status`

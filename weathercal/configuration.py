@@ -90,6 +90,7 @@ def _validate_widget(widget, display_type, page_id):
         "value",
         "icon",
         "current_summary",
+        "weather_alert",
         "hourly_table",
         "metadata",
         "server_status",

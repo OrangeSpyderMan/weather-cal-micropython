@@ -93,6 +93,31 @@ class CharacterDisplayTests(unittest.TestCase):
         self.assertEqual(lcd.rows[0], "    12C RAIN    ")
         self.assertEqual(lcd.rows[1], "  Weather Cal   ")
 
+    def test_1602_summary_reserves_space_for_weather_alert(self):
+        state = self.state()
+        state.data["current"]["temperature"] = {"value": -999.9, "unit": "°C"}
+        state.data["current"]["icon"] = "icon/storm.png"
+        state.data["current"]["alerts"] = {"active": True}
+        lcd = FakeLCD()
+        display = CharacterDisplay(lcd, 16, 2)
+
+        PageRenderer(display).render(
+            {
+                "id": "now",
+                "widgets": [
+                    {
+                        "type": "current_summary",
+                        "row": 0,
+                        "col": 0,
+                        "width": 16,
+                    }
+                ],
+            },
+            state,
+        )
+
+        self.assertEqual(lcd.rows[0], "-1000C STORM /!\\")
+
     def test_2004_hourly_golden_buffer(self):
         lcd = FakeLCD()
         display = CharacterDisplay(lcd, 20, 4)
