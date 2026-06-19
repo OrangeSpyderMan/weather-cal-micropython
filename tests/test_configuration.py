@@ -27,6 +27,7 @@ class ConfigurationTests(unittest.TestCase):
             "config_ep0164.py",
             "config_freenove_1602.py",
             "config_freenove_2004.py",
+            "config_serial.py",
         ):
             with self.subTest(filename=filename):
                 config = self.load(filename)

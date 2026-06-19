@@ -21,6 +21,7 @@ PROFILES = {
     "ep0164": ROOT / "examples" / "config_ep0164.py",
     "freenove-1602": ROOT / "examples" / "config_freenove_1602.py",
     "freenove-2004": ROOT / "examples" / "config_freenove_2004.py",
+    "serial": ROOT / "examples" / "config_serial.py",
 }
 CONFIG_NAMES = ("DEVICE", "MQTT", "RUNTIME", "BUTTONS", "PAGE_PROFILES")
 EP0164_ORIENTATIONS = {
@@ -40,6 +41,11 @@ def build_parser():
         "--orientation",
         choices=sorted(EP0164_ORIENTATIONS),
         help="EP-0164 orientation; flipped variants rotate by 180 degrees",
+    )
+    parser.add_argument(
+        "--serial-plain",
+        action="store_true",
+        help="disable ANSI screen clearing for the serial profile",
     )
     parser.add_argument("--mqtt-host")
     parser.add_argument("--mqtt-port", type=int)
@@ -100,6 +106,8 @@ def collect_values(args, input_fn=input, password_fn=getpass.getpass):
         rotation, page_profile = EP0164_ORIENTATIONS[orientation]
         config["DEVICE"]["rotation"] = rotation
         config["DEVICE"]["page_profile"] = page_profile
+    elif profile == "serial" and args.serial_plain:
+        config["DEVICE"]["ansi"] = False
     mqtt = config["MQTT"]
     runtime = config["RUNTIME"]
 

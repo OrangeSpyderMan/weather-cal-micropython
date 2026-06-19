@@ -6,6 +6,8 @@ from .serial import SerialDisplay
 
 def create_display(device):
     driver = device["driver"]
+    if driver == "serial":
+        return SerialDisplay(ansi=device.get("ansi", True))
     try:
         if driver == "ili9341":
             surface = Ili9341Surface(
@@ -25,6 +27,6 @@ def create_display(device):
     except Exception as exc:
         print("Display initialization failed:", exc)
         if device.get("serial_fallback", True):
-            return SerialDisplay()
+            return SerialDisplay(ansi=device.get("serial_ansi", True))
         raise
     raise ValueError("unsupported display driver: {}".format(driver))

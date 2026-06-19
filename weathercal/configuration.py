@@ -1,4 +1,4 @@
-DISPLAY_TYPES = ("ili9341", "hd44780")
+DISPLAY_TYPES = ("ili9341", "hd44780", "serial")
 BUTTON_ACTIONS = ("previous", "next", "home", "pause")
 
 
@@ -89,7 +89,7 @@ def _validate_widget(widget, display_type, page_id):
                 raise ConfigError(
                     "TFT widget on page {} is missing {}".format(page_id, key)
                 )
-    else:
+    elif display_type == "hd44780":
         for key in ("row", "col"):
             if key not in widget:
                 raise ConfigError(

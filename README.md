@@ -13,6 +13,7 @@ displays can be added later.
 - 52Pi EP-0164 breadboard kit, 320×240 ILI9341 TFT
 - Freenove/HD44780 1602 character LCD using direct 4-bit GPIO
 - Freenove/HD44780 2004 character LCD using direct 4-bit GPIO
+- USB serial terminal or plain serial log output
 
 The project includes original ILI9341, HD44780, MQTT 3.1.1, bitmap-icon, and
 5×7 font implementations under the MIT license. No Freenove or 52Pi source code
@@ -30,7 +31,7 @@ is copied into this repository.
 - Wi-Fi/MQTT recovery with bounded exponential backoff
 - NTP clock synchronization and stale-data badges
 - Redraw coalescing and periodic forced refresh
-- Serial display fallback for hardware troubleshooting
+- First-class serial terminal display plus serial fallback for troubleshooting
 
 ## MQTT compatibility
 
@@ -86,6 +87,7 @@ Available profiles are:
 examples/config_ep0164.py
 examples/config_freenove_1602.py
 examples/config_freenove_2004.py
+examples/config_serial.py
 ```
 
 4. Review the generated display pins and page definitions.
@@ -138,6 +140,27 @@ RS, Enable, D4, D5, D6, D7
 Pin numbers are entirely configurable. The example uses GP10–GP15 as a clear
 starting point; adjust them to your Freenove wiring. An optional GPIO-controlled
 backlight pin may be configured.
+
+## Serial display
+
+Choose the `serial` generator profile to use the Pico W USB serial connection
+as the display:
+
+```bash
+python3 tools/generate_config.py --profile serial
+```
+
+By default it clears and redraws an ANSI terminal on page changes. Use
+`--serial-plain` for append-only human-readable output suitable for logs:
+
+```bash
+python3 tools/generate_config.py \
+  --profile serial \
+  --serial-plain
+```
+
+The serial renderer follows the same configured pages, rotation timings, stale
+indicators, and MQTT-derived subscriptions as physical displays.
 
 ## EP-0164 controls
 

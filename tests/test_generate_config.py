@@ -17,6 +17,7 @@ def arguments(**overrides):
     values = {
         "profile": "freenove-1602",
         "orientation": None,
+        "serial_plain": False,
         "mqtt_host": "mqtt.local",
         "mqtt_port": 1883,
         "mqtt_base_topic": "inkplate/weather-calendar",
@@ -151,3 +152,13 @@ class GenerateConfigTests(unittest.TestCase):
             config["DEVICE"]["page_profile"],
             "ep0164-portrait",
         )
+
+    def test_serial_plain_disables_ansi_output(self):
+        args = arguments(
+            profile="serial",
+            serial_plain=True,
+        )
+
+        _, config, _ = generate_config.collect_values(args)
+
+        self.assertFalse(config["DEVICE"]["ansi"])
