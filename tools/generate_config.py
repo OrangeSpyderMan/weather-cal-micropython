@@ -59,6 +59,13 @@ def build_parser():
     parser.add_argument("--mqtt-port", type=int)
     parser.add_argument("--mqtt-base-topic")
     parser.add_argument("--mqtt-client-id")
+    parser.add_argument(
+        "--diagnostics",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="publish MQTT diagnostic logs and retained client status",
+    )
+    parser.add_argument("--status-interval", type=float)
     parser.add_argument("--mqtt-user")
     parser.add_argument("--mqtt-password")
     parser.add_argument("--wifi-ssid")
@@ -220,6 +227,11 @@ def collect_values(args, input_fn=input, password_fn=getpass.getpass):
         input_fn,
         required=True,
     )
+    diagnostics = mqtt.setdefault("diagnostics", {})
+    if args.diagnostics is not None:
+        diagnostics["enabled"] = args.diagnostics
+    if args.status_interval is not None:
+        diagnostics["status_interval_s"] = args.status_interval
     wifi_password = secret_value(
         args.wifi_password,
         "Wi-Fi password",

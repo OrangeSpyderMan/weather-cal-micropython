@@ -14,6 +14,7 @@ CORE_FILES = (
     "weathercal/buttons.py",
     "weathercal/compat.py",
     "weathercal/configuration.py",
+    "weathercal/diagnostics.py",
     "weathercal/displays/__init__.py",
     "weathercal/displays/base.py",
     "weathercal/displays/factory.py",

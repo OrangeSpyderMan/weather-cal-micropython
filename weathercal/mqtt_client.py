@@ -17,6 +17,9 @@ class MQTTClient:
         user=None,
         password=None,
         keepalive=60,
+        will_topic=None,
+        will_payload=None,
+        will_retain=False,
     ):
         self.client_id = _bytes(client_id)
         self.host = host
@@ -24,6 +27,11 @@ class MQTTClient:
         self.user = _bytes(user) if user else None
         self.password = _bytes(password) if password else None
         self.keepalive = keepalive
+        self.will_topic = _bytes(will_topic) if will_topic else None
+        self.will_payload = (
+            _bytes(will_payload) if will_payload is not None else None
+        )
+        self.will_retain = will_retain
         self.socket = None
         self.callback = None
         self.last_io = ticks_ms()
@@ -39,6 +47,12 @@ class MQTTClient:
         self.socket.connect(address)
         flags = 0x02
         payload = _field(self.client_id)
+        if self.will_topic is not None:
+            flags |= 0x04
+            if self.will_retain:
+                flags |= 0x20
+            payload += _field(self.will_topic)
+            payload += _field(self.will_payload or b"")
         if self.user is not None:
             flags |= 0x80
             payload += _field(self.user)
@@ -67,6 +81,10 @@ class MQTTClient:
         self.packet_id = (self.packet_id % 65535) + 1
         payload = struct.pack("!H", self.packet_id) + _field(_bytes(topic)) + b"\x00"
         self._write_packet(0x82, payload)
+
+    def publish(self, topic, payload, retain=False):
+        header = 0x31 if retain else 0x30
+        self._write_packet(header, _field(_bytes(topic)) + _bytes(payload))
 
     def check_msg(self):
         if not self.socket:

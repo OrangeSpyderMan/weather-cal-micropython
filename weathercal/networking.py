@@ -34,3 +34,16 @@ class NetworkManager:
         except Exception as exc:
             print("NTP sync failed:", exc)
             return False
+
+    def ip_address(self):
+        if not self.connected():
+            return None
+        return self.wlan.ifconfig()[0]
+
+    def rssi(self):
+        if not self.connected():
+            return None
+        try:
+            return self.wlan.status("rssi")
+        except Exception:
+            return None

@@ -13,6 +13,10 @@ MQTT = {
     "keepalive_s": 60,
     "reconnect_min_s": 2,
     "reconnect_max_s": 60,
+    "diagnostics": {
+        "enabled": True,
+        "status_interval_s": 300,
+    },
 }
 
 RUNTIME = {

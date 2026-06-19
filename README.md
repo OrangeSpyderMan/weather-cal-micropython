@@ -50,6 +50,22 @@ server/status
 
 Only topics required by the selected page profile are subscribed.
 
+Clients also publish operational diagnostics when `MQTT.diagnostics.enabled`
+is true:
+
+```text
+inkplate/weather-calendar/diagnostics
+inkplate/weather-calendar/clients/<client-id>/status
+```
+
+The shared diagnostics topic carries non-retained text logs compatible with
+the Weather Calendar server's existing `inkplate-diagnostics` listener. Client
+status is retained JSON, published on connection, meaningful state changes,
+and every `status_interval_s` seconds (300 by default). It includes display
+type, active page, version, uptime, free memory, Wi-Fi state/RSSI, weather age,
+staleness, and the last error. Each client configures a retained offline Last
+Will on its status topic.
+
 ## Install
 
 1. Flash current Pico W MicroPython firmware.

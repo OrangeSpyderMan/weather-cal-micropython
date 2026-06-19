@@ -26,6 +26,8 @@ def arguments(**overrides):
         "mqtt_port": 1883,
         "mqtt_base_topic": "inkplate/weather-calendar",
         "mqtt_client_id": "kitchen-weather",
+        "diagnostics": None,
+        "status_interval": None,
         "mqtt_user": None,
         "mqtt_password": None,
         "wifi_ssid": "home-wifi",
@@ -54,6 +56,8 @@ class GenerateConfigTests(unittest.TestCase):
         self.assertEqual(profile, "freenove-1602")
         self.assertEqual(config["MQTT"]["host"], "mqtt.local")
         self.assertEqual(config["MQTT"]["client_id"], "kitchen-weather")
+        self.assertTrue(config["MQTT"]["diagnostics"]["enabled"])
+        self.assertEqual(config["MQTT"]["diagnostics"]["status_interval_s"], 300)
         self.assertEqual(config["RUNTIME"]["default_page_duration_s"], 12)
         self.assertEqual(config["DEVICE"]["transport"], "pcf8574")
         self.assertEqual(config["DEVICE"]["i2c"]["sda"], 0)

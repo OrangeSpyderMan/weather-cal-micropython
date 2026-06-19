@@ -38,6 +38,9 @@ def validate_config(config):
     for name in ("host", "base_topic", "client_id"):
         if not mqtt.get(name):
             raise ConfigError("MQTT.{} is required".format(name))
+    diagnostics = mqtt.get("diagnostics", {})
+    if diagnostics.get("enabled", True):
+        _positive(diagnostics, "status_interval_s", default=300)
 
     runtime = config["RUNTIME"]
     _positive(runtime, "default_page_duration_s")
@@ -71,9 +74,9 @@ def validate_config(config):
     return config
 
 
-def _positive(mapping, key):
+def _positive(mapping, key, default=None):
     try:
-        value = float(mapping[key])
+        value = float(mapping.get(key, default))
     except (KeyError, TypeError, ValueError):
         raise ConfigError("{} must be a positive number".format(key))
     if value <= 0:
