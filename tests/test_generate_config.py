@@ -34,6 +34,7 @@ def arguments(**overrides):
         "force": False,
         "deploy": False,
         "device": None,
+        "reset": None,
     }
     values.update(overrides)
     return argparse.Namespace(**values)

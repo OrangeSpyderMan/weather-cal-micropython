@@ -82,6 +82,12 @@ def build_parser():
         "--device",
         help="mpremote device selector, for example /dev/ttyACM0",
     )
+    parser.add_argument(
+        "--reset",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="reset after deployment; prompts in interactive mode",
+    )
     return parser
 
 
@@ -368,10 +374,14 @@ def main():
         answer = input("Deploy to the Pico W now? [y/N]: ").strip().lower()
         should_deploy = answer in ("y", "yes")
     if should_deploy:
+        reset = args.reset
+        if args.non_interactive and reset is None:
+            reset = False
         deploy(
             args.config_output,
             args.secrets_output,
             device=args.device,
+            reset=reset,
         )
     else:
         print("Review display pins, then deploy with tools/deploy.py.")

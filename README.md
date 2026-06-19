@@ -78,6 +78,7 @@ python3 tools/generate_config.py \
   --wifi-ssid your-wifi \
   --wifi-password your-password \
   --deploy \
+  --reset \
   --device /dev/ttyACM0
 ```
 
@@ -100,7 +101,8 @@ python3 tools/deploy.py \
   --device /dev/ttyACM0
 ```
 
-Reset the Pico W after deployment.
+After copying, the deploy helper asks whether to reset the Pico W immediately.
+For scripted use, pass `--reset` or `--no-reset`.
 
 ## Configuration model
 
