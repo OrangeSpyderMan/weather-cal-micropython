@@ -16,6 +16,7 @@ SPEC.loader.exec_module(generate_config)
 def arguments(**overrides):
     values = {
         "profile": "freenove-1602",
+        "orientation": None,
         "mqtt_host": "mqtt.local",
         "mqtt_port": 1883,
         "mqtt_base_topic": "inkplate/weather-calendar",
@@ -53,6 +54,7 @@ class GenerateConfigTests(unittest.TestCase):
         answers = iter(
             [
                 "1",
+                "2",
                 "broker.local",
                 "1884",
                 "",
@@ -84,6 +86,11 @@ class GenerateConfigTests(unittest.TestCase):
         )
 
         self.assertEqual(profile, "ep0164")
+        self.assertEqual(config["DEVICE"]["rotation"], 3)
+        self.assertEqual(
+            config["DEVICE"]["page_profile"],
+            "ep0164-landscape",
+        )
         self.assertEqual(config["MQTT"]["port"], 1884)
         self.assertIsNone(secrets["MQTT_USER"])
 
@@ -130,3 +137,17 @@ class GenerateConfigTests(unittest.TestCase):
 
         with self.assertRaisesRegex(SystemExit, "Wi-Fi SSID is required"):
             generate_config.collect_values(args)
+
+    def test_non_interactive_portrait_flipped_selection(self):
+        args = arguments(
+            profile="ep0164",
+            orientation="portrait-flipped",
+        )
+
+        _, config, _ = generate_config.collect_values(args)
+
+        self.assertEqual(config["DEVICE"]["rotation"], 2)
+        self.assertEqual(
+            config["DEVICE"]["page_profile"],
+            "ep0164-portrait",
+        )

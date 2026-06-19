@@ -21,6 +21,7 @@ is copied into this repository.
 ## Features
 
 - Declarative display-specific page profiles in `config.py`
+- EP-0164 portrait, landscape, and 180-degree flipped orientations
 - Per-page rotation durations
 - Optional previous, next, home, and pause buttons
 - Config-derived retained MQTT subscriptions
@@ -62,6 +63,8 @@ It prompts for the display profile, broker, page timing, Wi-Fi credentials, and
 optional MQTT credentials. It writes `config.py` and a mode-0600 `secrets.py`,
 refusing to overwrite either unless `--force` is supplied. At the end it can
 deploy the generated configuration and application directly with `mpremote`.
+For the EP-0164 it also selects a matching portrait or landscape page layout
+and supports 180-degree flipped variants.
 
 For scripted setup:
 
@@ -69,6 +72,7 @@ For scripted setup:
 python3 tools/generate_config.py \
   --non-interactive \
   --profile ep0164 \
+  --orientation landscape-flipped \
   --mqtt-host 192.168.1.10 \
   --wifi-ssid your-wifi \
   --wifi-password your-password \
@@ -144,6 +148,19 @@ previous, next, home, pause
 ```
 
 Change or remove these mappings if your board wiring differs.
+
+The generator offers these EP-0164 orientations:
+
+```text
+portrait
+landscape
+portrait-flipped
+landscape-flipped
+```
+
+The flipped variants rotate the selected portrait or landscape layout by 180
+degrees. In a handwritten config, `DEVICE.rotation` accepts `0`, `1`, `2`, or
+`3` respectively.
 
 ## Development
 

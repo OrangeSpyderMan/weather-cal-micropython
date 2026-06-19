@@ -23,6 +23,12 @@ PROFILES = {
     "freenove-2004": ROOT / "examples" / "config_freenove_2004.py",
 }
 CONFIG_NAMES = ("DEVICE", "MQTT", "RUNTIME", "BUTTONS", "PAGE_PROFILES")
+EP0164_ORIENTATIONS = {
+    "portrait": (0, "ep0164-portrait"),
+    "landscape": (1, "ep0164-landscape"),
+    "portrait-flipped": (2, "ep0164-portrait"),
+    "landscape-flipped": (3, "ep0164-landscape"),
+}
 
 
 def build_parser():
@@ -30,6 +36,11 @@ def build_parser():
         description="Generate config.py and secrets.py for Weather Cal."
     )
     parser.add_argument("--profile", choices=sorted(PROFILES))
+    parser.add_argument(
+        "--orientation",
+        choices=sorted(EP0164_ORIENTATIONS),
+        help="EP-0164 orientation; flipped variants rotate by 180 degrees",
+    )
     parser.add_argument("--mqtt-host")
     parser.add_argument("--mqtt-port", type=int)
     parser.add_argument("--mqtt-base-topic")
@@ -81,6 +92,14 @@ def collect_values(args, input_fn=input, password_fn=getpass.getpass):
         profile = choose_profile(input_fn)
 
     config = load_profile(profile)
+    if profile == "ep0164":
+        orientation = args.orientation
+        if not orientation and not args.non_interactive:
+            orientation = choose_orientation(input_fn)
+        orientation = orientation or "landscape"
+        rotation, page_profile = EP0164_ORIENTATIONS[orientation]
+        config["DEVICE"]["rotation"] = rotation
+        config["DEVICE"]["page_profile"] = page_profile
     mqtt = config["MQTT"]
     runtime = config["RUNTIME"]
 
@@ -182,6 +201,24 @@ def choose_profile(input_fn):
         print("  {}) {}".format(index, name))
     while True:
         answer = input_fn("Select profile [1]: ").strip() or "1"
+        try:
+            return choices[int(answer) - 1]
+        except (ValueError, IndexError):
+            print("Enter a number from 1 to {}.".format(len(choices)))
+
+
+def choose_orientation(input_fn):
+    choices = (
+        "landscape",
+        "landscape-flipped",
+        "portrait",
+        "portrait-flipped",
+    )
+    print("EP-0164 orientations:")
+    for index, name in enumerate(choices, 1):
+        print("  {}) {}".format(index, name))
+    while True:
+        answer = input_fn("Select orientation [1]: ").strip() or "1"
         try:
             return choices[int(answer) - 1]
         except (ValueError, IndexError):

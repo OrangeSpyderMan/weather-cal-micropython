@@ -16,6 +16,8 @@ def validate_config(config):
     display_type = device.get("driver")
     if display_type not in DISPLAY_TYPES:
         raise ConfigError("unsupported DEVICE.driver: {}".format(display_type))
+    if display_type == "ili9341" and device.get("rotation", 1) not in (0, 1, 2, 3):
+        raise ConfigError("DEVICE.rotation must be 0, 1, 2, or 3")
     profile_name = device.get("page_profile")
     if profile_name not in config["PAGE_PROFILES"]:
         raise ConfigError("unknown page profile: {}".format(profile_name))

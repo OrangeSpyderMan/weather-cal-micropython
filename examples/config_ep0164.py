@@ -1,6 +1,7 @@
 DEVICE = {
     "driver": "ili9341",
-    "page_profile": "ep0164",
+    # 0=portrait, 1=landscape, 2=portrait flipped, 3=landscape flipped.
+    "page_profile": "ep0164-landscape",
     "rotation": 1,
     "baudrate": 40000000,
     "serial_fallback": True,
@@ -41,8 +42,7 @@ BUTTONS = {
     "pause": {"pin": 21, "active_low": True},
 }
 
-PAGE_PROFILES = {
-    "ep0164": [
+LANDSCAPE_PAGES = [
         {
             "id": "now",
             "duration_s": 10,
@@ -137,4 +137,104 @@ PAGE_PROFILES = {
             ],
         },
     ]
+
+PORTRAIT_PAGES = [
+    {
+        "id": "now",
+        "duration_s": 10,
+        "widgets": [
+            {
+                "type": "text",
+                "text": "WEATHER",
+                "x": 18,
+                "y": 12,
+                "scale": 3,
+                "color": "cyan",
+            },
+            {
+                "type": "icon",
+                "path": "current.icon",
+                "x": 56,
+                "y": 62,
+                "scale": 5,
+            },
+            {
+                "type": "value",
+                "path": "current.temperature",
+                "formatter": "temperature",
+                "x": 42,
+                "y": 158,
+                "scale": 5,
+                "color": "white",
+            },
+            {
+                "type": "value",
+                "path": "wind",
+                "formatter": "wind",
+                "x": 12,
+                "y": 232,
+                "scale": 2,
+            },
+            {
+                "type": "value",
+                "path": "rain",
+                "formatter": "rain",
+                "label": "RAIN ",
+                "x": 12,
+                "y": 270,
+                "scale": 2,
+            },
+        ],
+    },
+    {
+        "id": "forecast",
+        "duration_s": 9,
+        "widgets": [
+            {
+                "type": "text",
+                "text": "NEXT HOURS",
+                "x": 12,
+                "y": 12,
+                "scale": 3,
+                "color": "cyan",
+            },
+            {
+                "type": "hourly_table",
+                "x": 12,
+                "y": 70,
+                "rows": 6,
+                "row_height": 38,
+                "scale": 2,
+            },
+        ],
+    },
+    {
+        "id": "system",
+        "widgets": [
+            {
+                "type": "text",
+                "text": "SYSTEM",
+                "x": 18,
+                "y": 12,
+                "scale": 3,
+                "color": "cyan",
+            },
+            {"type": "metadata", "x": 12, "y": 82, "scale": 2},
+            {"type": "server_status", "x": 12, "y": 130, "scale": 2},
+            {
+                "type": "value",
+                "path": "server.runtime.version",
+                "label": "VER ",
+                "x": 12,
+                "y": 178,
+                "scale": 2,
+                "missing": "unknown",
+            },
+        ],
+    },
+]
+
+PAGE_PROFILES = {
+    "ep0164-landscape": LANDSCAPE_PAGES,
+    "ep0164-portrait": PORTRAIT_PAGES,
 }

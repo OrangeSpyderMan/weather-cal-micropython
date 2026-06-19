@@ -19,6 +19,13 @@ RED = 0xF800
 GREEN = 0x07E0
 NAVY = 0x0010
 
+ROTATIONS = {
+    0: (240, 320, 0x48),
+    1: (320, 240, 0x28),
+    2: (240, 320, 0x88),
+    3: (320, 240, 0xE8),
+}
+
 
 class Ili9341Surface:
     def __init__(self, pins, rotation=1, baudrate=40000000):
@@ -34,14 +41,16 @@ class Ili9341Surface:
             mosi=Pin(pins["mosi"]),
             miso=Pin(pins["miso"]) if pins.get("miso") is not None else None,
         )
-        self.width = 320 if rotation % 2 else 240
-        self.height = 240 if rotation % 2 else 320
+        try:
+            self.width, self.height, madctl = ROTATIONS[rotation]
+        except KeyError:
+            raise ValueError("ILI9341 rotation must be 0, 1, 2, or 3")
         self._reset()
         for command, data in (
             (0x01, None),
             (0x28, None),
             (0x3A, b"\x55"),
-            (0x36, bytes((0x28 if rotation == 1 else 0xE8,))),
+            (0x36, bytes((madctl,))),
             (0x11, None),
             (0x29, None),
         ):
@@ -174,9 +183,11 @@ class Ili9341Display(Display):
             y += row_height
 
     def badge(self, value, secondary=False):
-        y = 222 if secondary else 204
-        self.surface.fill_rect(250, y, 70, 18, RED)
-        self.surface.draw_text(254, y + 3, value, WHITE, 1)
+        width = min(70, self.surface.width)
+        x = self.surface.width - width
+        y = self.surface.height - (18 if secondary else 36)
+        self.surface.fill_rect(x, y, width, 18, RED)
+        self.surface.draw_text(x + 4, y + 3, value, WHITE, 1)
 
     def end(self):
         pass
@@ -184,3 +195,10 @@ class Ili9341Display(Display):
 
 def _coords(start, end):
     return bytes((start >> 8, start & 0xFF, end >> 8, end & 0xFF))
+
+
+def rotation_geometry(rotation):
+    try:
+        return ROTATIONS[rotation]
+    except KeyError:
+        raise ValueError("ILI9341 rotation must be 0, 1, 2, or 3")

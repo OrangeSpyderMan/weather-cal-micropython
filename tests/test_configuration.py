@@ -45,3 +45,10 @@ class ConfigurationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ConfigError, "missing row"):
             validate_config(config)
+
+    def test_rejects_invalid_ili9341_rotation(self):
+        config = self.load("config_ep0164.py")
+        config["DEVICE"]["rotation"] = 4
+
+        with self.assertRaisesRegex(ConfigError, "rotation"):
+            validate_config(config)
