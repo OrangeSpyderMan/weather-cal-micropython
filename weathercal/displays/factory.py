@@ -1,15 +1,13 @@
-from .character import CharacterDisplay
-from .hd44780 import Hd44780, Hd44780Bus, Pcf8574Bus
-from .ili9341 import Ili9341Display, Ili9341Surface
-from .serial import SerialDisplay
-
-
 def create_display(device):
     driver = device["driver"]
     if driver == "serial":
+        from .serial import SerialDisplay
+
         return SerialDisplay(ansi=device.get("ansi", True))
     try:
         if driver == "ili9341":
+            from .ili9341 import Ili9341Display, Ili9341Surface
+
             surface = Ili9341Surface(
                 device["pins"],
                 rotation=device.get("rotation", 1),
@@ -17,6 +15,9 @@ def create_display(device):
             )
             return Ili9341Display(surface)
         if driver == "hd44780":
+            from .character import CharacterDisplay
+            from .hd44780 import Hd44780, Hd44780Bus, Pcf8574Bus
+
             transport = device.get("transport", "gpio")
             if transport == "pcf8574":
                 bus = Pcf8574Bus(device["i2c"])
@@ -35,6 +36,8 @@ def create_display(device):
     except Exception as exc:
         print("Display initialization failed:", exc)
         if device.get("serial_fallback", True):
+            from .serial import SerialDisplay
+
             return SerialDisplay(ansi=device.get("serial_ansi", True))
         raise
     raise ValueError("unsupported display driver: {}".format(driver))

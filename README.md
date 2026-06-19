@@ -104,6 +104,12 @@ python3 tools/deploy.py \
 After copying, the deploy helper asks whether to reset the Pico W immediately.
 For scripted use, pass `--reset` or `--no-reset`.
 
+The deploy helper reads `DEVICE` from the selected configuration and installs
+only the required display driver. Serial fallback support is included when it
+is enabled in `DEVICE`. Unused display drivers and accidental `__pycache__`
+directories from older deployments are removed. Pass `--all-drivers` if one
+device image must support switching display types without redeployment.
+
 ## Configuration model
 
 `config.py` exports five dictionaries:

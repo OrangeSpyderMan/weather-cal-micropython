@@ -96,6 +96,11 @@ def build_parser():
         default=None,
         help="reset after deployment; prompts in interactive mode",
     )
+    parser.add_argument(
+        "--all-drivers",
+        action="store_true",
+        help="deploy every display driver instead of the selected profile",
+    )
     return parser
 
 
@@ -452,6 +457,7 @@ def main():
             args.config_output,
             args.secrets_output,
             device=args.device,
+            all_drivers=args.all_drivers,
             reset=reset,
         )
     else:

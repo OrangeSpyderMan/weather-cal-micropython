@@ -39,6 +39,7 @@ def arguments(**overrides):
         "deploy": False,
         "device": None,
         "reset": None,
+        "all_drivers": False,
     }
     values.update(overrides)
     return argparse.Namespace(**values)

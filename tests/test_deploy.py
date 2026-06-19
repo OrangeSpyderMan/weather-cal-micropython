@@ -13,13 +13,26 @@ SPEC.loader.exec_module(deploy_tool)
 
 
 class DeployTests(unittest.TestCase):
-    def test_deploy_copies_generated_files_and_package(self):
+    def make_files(self, root, device):
+        config = root / "config.py"
+        secrets = root / "secrets.py"
+        config.write_text("DEVICE = {!r}\n".format(device), encoding="utf-8")
+        secrets.write_text("WIFI_SSID = 'wifi'\n", encoding="utf-8")
+        return config, secrets
+
+    def copy_destinations(self, run):
+        return [
+            command[-1]
+            for command in (call.args[0] for call in run.call_args_list)
+            if "cp" in command
+        ]
+
+    def test_hd44780_bundle_excludes_ili9341(self):
         with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            config = root / "config.py"
-            secrets = root / "secrets.py"
-            config.write_text("DEVICE = {}", encoding="utf-8")
-            secrets.write_text("WIFI_SSID = 'wifi'", encoding="utf-8")
+            config, secrets = self.make_files(
+                Path(temporary_dir),
+                {"driver": "hd44780", "serial_fallback": True},
+            )
             run = mock.Mock()
 
             deploy_tool.deploy(
@@ -31,29 +44,64 @@ class DeployTests(unittest.TestCase):
                 run=run,
             )
 
-        commands = [call.args[0] for call in run.call_args_list]
+        destinations = self.copy_destinations(run)
+        self.assertIn(":weathercal/displays/character.py", destinations)
+        self.assertIn(":weathercal/displays/hd44780.py", destinations)
+        self.assertIn(":weathercal/displays/serial.py", destinations)
+        self.assertNotIn(":weathercal/displays/ili9341.py", destinations)
+        self.assertNotIn(":weathercal/displays/font5x7.py", destinations)
+        self.assertFalse(any("-r" in call.args[0] for call in run.call_args_list))
         self.assertEqual(
-            commands[0],
-            [
-                "mpremote",
-                "connect",
-                "/dev/ttyACM0",
-                "fs",
-                "cp",
-                str(ROOT / "main.py"),
-                ":main.py",
-            ],
+            run.call_args_list[0].args[0][:4],
+            ["mpremote", "connect", "/dev/ttyACM0", "exec"],
         )
-        self.assertEqual(commands[-2][-1], ":secrets.py")
-        self.assertEqual(commands[-1][-3:], ["-r", str(ROOT / "weathercal"), ":"])
+
+    def test_ili9341_bundle_excludes_hd44780(self):
+        selected = deploy_tool.deployment_files(
+            {"driver": "ili9341", "serial_fallback": False}
+        )
+
+        self.assertIn("weathercal/displays/ili9341.py", selected)
+        self.assertIn("weathercal/displays/font5x7.py", selected)
+        self.assertNotIn("weathercal/displays/character.py", selected)
+        self.assertNotIn("weathercal/displays/hd44780.py", selected)
+        self.assertNotIn("weathercal/displays/serial.py", selected)
+
+    def test_serial_bundle_contains_only_serial_driver(self):
+        selected = deploy_tool.deployment_files({"driver": "serial"})
+
+        self.assertIn("weathercal/displays/serial.py", selected)
+        self.assertNotIn("weathercal/displays/ili9341.py", selected)
+        self.assertNotIn("weathercal/displays/hd44780.py", selected)
+
+    def test_all_drivers_bundle_contains_every_driver(self):
+        selected = deploy_tool.deployment_files(
+            {"driver": "serial"},
+            all_drivers=True,
+        )
+
+        for files in deploy_tool.DRIVER_FILES.values():
+            for path in files:
+                self.assertIn(path, selected)
+
+    def test_cleanup_removes_unused_drivers_and_bytecode(self):
+        selected = deploy_tool.deployment_files(
+            {"driver": "hd44780", "serial_fallback": False}
+        )
+
+        script = deploy_tool.cleanup_script(selected)
+
+        self.assertIn("weathercal/displays/ili9341.py", script)
+        self.assertIn("weathercal/displays/serial.py", script)
+        self.assertNotIn("'weathercal/displays/hd44780.py'", script)
+        self.assertIn("weathercal/displays/__pycache__", script)
 
     def test_deploy_prompts_and_resets_when_confirmed(self):
         with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            config = root / "config.py"
-            secrets = root / "secrets.py"
-            config.write_text("DEVICE = {}", encoding="utf-8")
-            secrets.write_text("WIFI_SSID = 'wifi'", encoding="utf-8")
+            config, secrets = self.make_files(
+                Path(temporary_dir),
+                {"driver": "serial"},
+            )
             run = mock.Mock()
 
             deploy_tool.deploy(
@@ -73,11 +121,10 @@ class DeployTests(unittest.TestCase):
 
     def test_deploy_can_skip_reset_explicitly(self):
         with tempfile.TemporaryDirectory() as temporary_dir:
-            root = Path(temporary_dir)
-            config = root / "config.py"
-            secrets = root / "secrets.py"
-            config.write_text("DEVICE = {}", encoding="utf-8")
-            secrets.write_text("WIFI_SSID = 'wifi'", encoding="utf-8")
+            config, secrets = self.make_files(
+                Path(temporary_dir),
+                {"driver": "serial"},
+            )
             run = mock.Mock()
 
             deploy_tool.deploy(
@@ -88,4 +135,7 @@ class DeployTests(unittest.TestCase):
                 run=run,
             )
 
-        self.assertNotIn("reset", [part for call in run.call_args_list for part in call.args[0]])
+        self.assertNotIn(
+            "reset",
+            [part for call in run.call_args_list for part in call.args[0]],
+        )
