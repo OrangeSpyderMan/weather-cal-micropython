@@ -90,7 +90,7 @@ class CharacterDisplayTests(unittest.TestCase):
             self.state(),
         )
 
-        self.assertEqual(lcd.rows[0], "12C RAIN        ")
+        self.assertEqual(lcd.rows[0], "    12C RAIN    ")
         self.assertEqual(lcd.rows[1], "  Weather Cal   ")
 
     def test_2004_hourly_golden_buffer(self):
@@ -147,6 +147,20 @@ class CharacterDisplayTests(unittest.TestCase):
         )
 
         self.assertEqual(lcd.rows[0], "23:59 -100C 100%")
+
+    def test_character_values_default_to_centered_but_allow_left_override(self):
+        lcd = FakeLCD()
+        display = CharacterDisplay(lcd, 16, 2)
+        display.begin("alignment")
+        display.text({"row": 0, "width": 16}, "Wind 12km/h")
+        display.text(
+            {"row": 1, "width": 16, "align": "left"},
+            "23:00 8C 20%",
+        )
+        display.end()
+
+        self.assertEqual(lcd.rows[0], "  Wind 12km/h   ")
+        self.assertEqual(lcd.rows[1], "23:00 8C 20%    ")
 
     def test_2004_metadata_abbreviates_source_and_keeps_time(self):
         lcd = FakeLCD()

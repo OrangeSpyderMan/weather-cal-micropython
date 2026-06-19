@@ -124,6 +124,10 @@ Every page has a stable `id`, optional `duration_s`, and ordered `widgets`.
 ILI9341 widgets use pixel `x`/`y` geometry. Character LCD widgets use
 `row`/`col` and optional `width`/`align`.
 
+Character LCD prose, values, summaries, and status rows are centered by
+default. Hourly forecast tables remain left-aligned to preserve their columns.
+Set `align` explicitly when a page needs a different treatment.
+
 Supported widget types:
 
 - `text`

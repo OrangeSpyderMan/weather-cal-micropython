@@ -21,7 +21,7 @@ class CharacterDisplay(Display):
             widget.get("col", 0),
             str(value),
             widget.get("width"),
-            widget.get("align", "left"),
+            widget.get("align", "center"),
         )
 
     def icon(self, widget, name):
@@ -35,7 +35,7 @@ class CharacterDisplay(Display):
             widget.get("col", 0),
             " ".join(pieces),
             widget.get("width"),
-            widget.get("align", "left"),
+            widget.get("align", "center"),
         )
 
     def hourly(self, widget, entries):
