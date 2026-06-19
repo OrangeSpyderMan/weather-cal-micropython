@@ -1,0 +1,97 @@
+DISPLAY_TYPES = ("ili9341", "hd44780")
+BUTTON_ACTIONS = ("previous", "next", "home", "pause")
+
+
+class ConfigError(ValueError):
+    pass
+
+
+def validate_config(config):
+    required = ("DEVICE", "MQTT", "RUNTIME", "BUTTONS", "PAGE_PROFILES")
+    for name in required:
+        if name not in config:
+            raise ConfigError("missing {}".format(name))
+
+    device = config["DEVICE"]
+    display_type = device.get("driver")
+    if display_type not in DISPLAY_TYPES:
+        raise ConfigError("unsupported DEVICE.driver: {}".format(display_type))
+    profile_name = device.get("page_profile")
+    if profile_name not in config["PAGE_PROFILES"]:
+        raise ConfigError("unknown page profile: {}".format(profile_name))
+
+    mqtt = config["MQTT"]
+    for name in ("host", "base_topic", "client_id"):
+        if not mqtt.get(name):
+            raise ConfigError("MQTT.{} is required".format(name))
+
+    runtime = config["RUNTIME"]
+    _positive(runtime, "default_page_duration_s")
+    _positive(runtime, "stale_after_s")
+    _positive(runtime, "forced_refresh_s")
+    _positive(runtime, "redraw_coalesce_ms")
+
+    buttons = config["BUTTONS"]
+    for action, spec in buttons.items():
+        if action not in BUTTON_ACTIONS:
+            raise ConfigError("unsupported button action: {}".format(action))
+        if "pin" not in spec:
+            raise ConfigError("button {} is missing pin".format(action))
+
+    pages = config["PAGE_PROFILES"][profile_name]
+    if not pages:
+        raise ConfigError("page profile must contain at least one page")
+    seen = set()
+    for page in pages:
+        page_id = page.get("id")
+        if not page_id or page_id in seen:
+            raise ConfigError("page ids must be present and unique")
+        seen.add(page_id)
+        if "duration_s" in page:
+            _positive(page, "duration_s")
+        widgets = page.get("widgets")
+        if not widgets:
+            raise ConfigError("page {} has no widgets".format(page_id))
+        for widget in widgets:
+            _validate_widget(widget, display_type, page_id)
+    return config
+
+
+def _positive(mapping, key):
+    try:
+        value = float(mapping[key])
+    except (KeyError, TypeError, ValueError):
+        raise ConfigError("{} must be a positive number".format(key))
+    if value <= 0:
+        raise ConfigError("{} must be a positive number".format(key))
+
+
+def _validate_widget(widget, display_type, page_id):
+    widget_type = widget.get("type")
+    supported = (
+        "text",
+        "value",
+        "icon",
+        "current_summary",
+        "hourly_table",
+        "metadata",
+        "server_status",
+    )
+    if widget_type not in supported:
+        raise ConfigError(
+            "page {} has unsupported widget {}".format(page_id, widget_type)
+        )
+    if display_type == "ili9341":
+        for key in ("x", "y"):
+            if key not in widget:
+                raise ConfigError(
+                    "TFT widget on page {} is missing {}".format(page_id, key)
+                )
+    else:
+        for key in ("row", "col"):
+            if key not in widget:
+                raise ConfigError(
+                    "LCD widget on page {} is missing {}".format(page_id, key)
+                )
+    if widget_type == "value" and not widget.get("path"):
+        raise ConfigError("value widget on page {} needs path".format(page_id))

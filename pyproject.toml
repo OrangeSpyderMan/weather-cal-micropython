@@ -1,0 +1,10 @@
+[project]
+name = "weather-cal-micropython"
+version = "0.1.0"
+description = "Configurable MicroPython MQTT displays for Weather Calendar"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Philip Dodd" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
