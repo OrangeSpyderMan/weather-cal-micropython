@@ -38,6 +38,7 @@ DRIVER_FILES = {
         "weathercal/displays/font5x7.py",
         "weathercal/displays/ili9341.py",
     ),
+    "pico_display_2": ("weathercal/displays/pico_display_2.py",),
     "serial": ("weathercal/displays/serial.py",),
 }
 

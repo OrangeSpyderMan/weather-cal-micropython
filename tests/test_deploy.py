@@ -74,6 +74,16 @@ class DeployTests(unittest.TestCase):
         self.assertNotIn("weathercal/displays/ili9341.py", selected)
         self.assertNotIn("weathercal/displays/hd44780.py", selected)
 
+    def test_pico_display_2_bundle_contains_driver_and_serial_fallback(self):
+        selected = deploy_tool.deployment_files(
+            {"driver": "pico_display_2", "serial_fallback": True}
+        )
+
+        self.assertIn("weathercal/displays/pico_display_2.py", selected)
+        self.assertIn("weathercal/displays/serial.py", selected)
+        self.assertNotIn("weathercal/displays/ili9341.py", selected)
+        self.assertNotIn("weathercal/displays/hd44780.py", selected)
+
     def test_all_drivers_bundle_contains_every_driver(self):
         selected = deploy_tool.deployment_files(
             {"driver": "serial"},

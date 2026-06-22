@@ -7,6 +7,7 @@ from weathercal.app import WeatherCalApp
 class FakeDisplay:
     def __init__(self):
         self.statuses = []
+        self.indicators = []
 
     def status(self, title, detail=""):
         self.statuses.append((title, detail))
@@ -28,6 +29,9 @@ class FakeDisplay:
 
     def badge(self, value, secondary=False):
         pass
+
+    def indicator(self, state):
+        self.indicators.append(state)
 
     def end(self):
         pass
@@ -138,6 +142,7 @@ class AppTests(unittest.TestCase):
         app.step()
 
         self.assertTrue(app.connected)
+        self.assertEqual(app.display.indicators[-1], "stale")
         self.assertEqual(
             set(FakeMQTT.instances[0].subscriptions),
             {
@@ -231,6 +236,7 @@ class AppTests(unittest.TestCase):
 
         app.step()
         self.assertFalse(app.connected)
+        self.assertEqual(app.display.indicators[-1], "error")
         self.assertEqual(app.reconnect_delay_s, 4)
         clock[0] = 2000
         app.step()
@@ -238,3 +244,25 @@ class AppTests(unittest.TestCase):
         clock[0] = 6000
         app.step()
         self.assertEqual(app.reconnect_delay_s, 8)
+
+    def test_indicator_priority_is_error_stale_paused_online(self):
+        app = WeatherCalApp(
+            config(),
+            {"WIFI_SSID": "wifi", "WIFI_PASSWORD": "secret"},
+            display=FakeDisplay(),
+            mqtt_factory=FakeMQTT,
+            network_factory=FakeNetwork,
+            now_ms=lambda: 0,
+        )
+        app.connected = True
+
+        app._update_indicator(stale=False)
+        self.assertEqual(app.display.indicators[-1], "online")
+        app.scheduler.paused = True
+        app._update_indicator(stale=False)
+        self.assertEqual(app.display.indicators[-1], "paused")
+        app._update_indicator(stale=True)
+        self.assertEqual(app.display.indicators[-1], "stale")
+        app.last_error = "failed"
+        app._update_indicator(stale=False)
+        self.assertEqual(app.display.indicators[-1], "error")

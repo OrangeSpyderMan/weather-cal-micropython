@@ -64,6 +64,7 @@ class WeatherCalApp:
         self.last_error = None
         self.pending_diagnostics = []
         self.buttons = None
+        self._set_indicator("connecting")
         if config["BUTTONS"] and pin_factory:
             self.buttons = ButtonController(
                 config["BUTTONS"],
@@ -138,6 +139,7 @@ class WeatherCalApp:
             self.status_dirty = True
             self._flush_diagnostics()
             self._log("INFO", "connected to MQTT")
+            self._update_indicator()
             self._publish_status(self.now_ms())
         except Exception as exc:
             self._offline(exc)
@@ -145,6 +147,7 @@ class WeatherCalApp:
     def _offline(self, exc):
         self.last_error = str(exc)
         self.connected = False
+        self._set_indicator("error")
         if self.client:
             self.client.disconnect()
         self._log("ERROR", "connection lost: {}".format(exc))
@@ -179,6 +182,7 @@ class WeatherCalApp:
                 self.scheduler.toggle_pause(now)
             self.dirty_pages.add(self.scheduler.page["id"])
             self.status_dirty = True
+            self._update_indicator()
 
     def _draw_if_due(self, now):
         runtime = self.config["RUNTIME"]
@@ -200,6 +204,7 @@ class WeatherCalApp:
         if (page_id in self.dirty_pages and coalesced) or forced:
             age = age_seconds(self.state.generated_at())
             stale = age is None or age > runtime["stale_after_s"]
+            self._update_indicator(stale)
             try:
                 self.renderer.render(
                     self.scheduler.page,
@@ -209,6 +214,7 @@ class WeatherCalApp:
                 )
             except Exception as exc:
                 self.last_error = "display: {}".format(exc)
+                self._set_indicator("error")
                 self._log("ERROR", self.last_error)
                 self.dirty_pages.discard(page_id)
                 self.status_dirty = True
@@ -218,6 +224,32 @@ class WeatherCalApp:
             self.status_dirty = True
             if forced:
                 self.last_forced_draw = now
+
+    def _update_indicator(self, stale=None):
+        if self.last_error:
+            state = "error"
+        elif not self.connected:
+            state = "connecting"
+        else:
+            if stale is None:
+                age = age_seconds(self.state.generated_at())
+                stale = (
+                    age is None
+                    or age > self.config["RUNTIME"]["stale_after_s"]
+                )
+            if stale:
+                state = "stale"
+            elif self.scheduler.paused:
+                state = "paused"
+            else:
+                state = "online"
+        self._set_indicator(state)
+
+    def _set_indicator(self, state):
+        try:
+            self.display.indicator(state)
+        except Exception:
+            pass
 
     def _diagnostics_enabled(self):
         return self.config["MQTT"].get("diagnostics", {}).get("enabled", True)

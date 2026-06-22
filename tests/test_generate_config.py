@@ -166,6 +166,34 @@ class GenerateConfigTests(unittest.TestCase):
             "ep0164-portrait",
         )
 
+    def test_pico_display_2_flipped_selection(self):
+        args = arguments(
+            profile="pico-display-2",
+            orientation="landscape-flipped",
+        )
+
+        _, config, _ = generate_config.collect_values(args)
+
+        self.assertEqual(config["DEVICE"]["rotation"], 180)
+        self.assertEqual(
+            config["BUTTONS"],
+            {
+                "previous": {"pin": 14, "active_low": True},
+                "next": {"pin": 15, "active_low": True},
+                "home": {"pin": 12, "active_low": True},
+                "pause": {"pin": 13, "active_low": True},
+            },
+        )
+
+    def test_pico_display_2_rejects_portrait_orientation(self):
+        args = arguments(
+            profile="pico-display-2",
+            orientation="portrait",
+        )
+
+        with self.assertRaisesRegex(SystemExit, "supports landscape"):
+            generate_config.collect_values(args)
+
     def test_serial_plain_disables_ansi_output(self):
         args = arguments(
             profile="serial",

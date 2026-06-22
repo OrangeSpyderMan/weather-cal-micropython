@@ -27,6 +27,7 @@ class ConfigurationTests(unittest.TestCase):
             "config_ep0164.py",
             "config_freenove_1602.py",
             "config_freenove_2004.py",
+            "config_pico_display_2.py",
             "config_serial.py",
         ):
             with self.subTest(filename=filename):
@@ -52,4 +53,15 @@ class ConfigurationTests(unittest.TestCase):
         config["DEVICE"]["rotation"] = 4
 
         with self.assertRaisesRegex(ConfigError, "rotation"):
+            validate_config(config)
+
+    def test_rejects_invalid_pico_display_2_settings(self):
+        config = self.load("config_pico_display_2.py")
+        config["DEVICE"]["rotation"] = 90
+        with self.assertRaisesRegex(ConfigError, "0 or 180"):
+            validate_config(config)
+
+        config = self.load("config_pico_display_2.py")
+        config["DEVICE"]["backlight"] = 1.5
+        with self.assertRaisesRegex(ConfigError, "backlight"):
             validate_config(config)

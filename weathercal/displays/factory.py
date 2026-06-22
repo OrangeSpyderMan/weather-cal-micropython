@@ -14,6 +14,10 @@ def create_display(device):
                 baudrate=device.get("baudrate", 40000000),
             )
             return Ili9341Display(surface)
+        if driver == "pico_display_2":
+            from .pico_display_2 import create_pico_display_2
+
+            return create_pico_display_2(device)
         if driver == "hd44780":
             from .character import CharacterDisplay
             from .hd44780 import Hd44780, Hd44780Bus, Pcf8574Bus

@@ -21,6 +21,7 @@ PROFILES = {
     "ep0164": ROOT / "examples" / "config_ep0164.py",
     "freenove-1602": ROOT / "examples" / "config_freenove_1602.py",
     "freenove-2004": ROOT / "examples" / "config_freenove_2004.py",
+    "pico-display-2": ROOT / "examples" / "config_pico_display_2.py",
     "serial": ROOT / "examples" / "config_serial.py",
 }
 CONFIG_NAMES = ("DEVICE", "MQTT", "RUNTIME", "BUTTONS", "PAGE_PROFILES")
@@ -29,6 +30,10 @@ EP0164_ORIENTATIONS = {
     "landscape": (1, "ep0164-landscape"),
     "portrait-flipped": (2, "ep0164-portrait"),
     "landscape-flipped": (3, "ep0164-landscape"),
+}
+PICO_DISPLAY_2_ORIENTATIONS = {
+    "landscape": 0,
+    "landscape-flipped": 180,
 }
 
 
@@ -40,7 +45,7 @@ def build_parser():
     parser.add_argument(
         "--orientation",
         choices=sorted(EP0164_ORIENTATIONS),
-        help="EP-0164 orientation; flipped variants rotate by 180 degrees",
+        help="display orientation; supported values depend on the profile",
     )
     parser.add_argument(
         "--serial-plain",
@@ -132,6 +137,17 @@ def collect_values(args, input_fn=input, password_fn=getpass.getpass):
         rotation, page_profile = EP0164_ORIENTATIONS[orientation]
         config["DEVICE"]["rotation"] = rotation
         config["DEVICE"]["page_profile"] = page_profile
+    elif profile == "pico-display-2":
+        orientation = args.orientation
+        if not orientation and not args.non_interactive:
+            orientation = choose_pico_display_2_orientation(input_fn)
+        orientation = orientation or "landscape"
+        if orientation not in PICO_DISPLAY_2_ORIENTATIONS:
+            raise SystemExit(
+                "ERROR: pico-display-2 supports landscape and "
+                "landscape-flipped orientations"
+            )
+        config["DEVICE"]["rotation"] = PICO_DISPLAY_2_ORIENTATIONS[orientation]
     elif profile == "serial" and args.serial_plain:
         config["DEVICE"]["ansi"] = False
     elif profile.startswith("freenove-"):
@@ -286,6 +302,19 @@ def choose_orientation(input_fn):
         "portrait-flipped",
     )
     print("EP-0164 orientations:")
+    for index, name in enumerate(choices, 1):
+        print("  {}) {}".format(index, name))
+    while True:
+        answer = input_fn("Select orientation [1]: ").strip() or "1"
+        try:
+            return choices[int(answer) - 1]
+        except (ValueError, IndexError):
+            print("Enter a number from 1 to {}.".format(len(choices)))
+
+
+def choose_pico_display_2_orientation(input_fn):
+    choices = ("landscape", "landscape-flipped")
+    print("Pico Display Pack 2.0 orientations:")
     for index, name in enumerate(choices, 1):
         print("  {}) {}".format(index, name))
     while True:

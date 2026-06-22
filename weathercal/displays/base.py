@@ -17,6 +17,9 @@ class Display:
     def badge(self, value, secondary=False):
         pass
 
+    def indicator(self, state):
+        pass
+
     def end(self):
         raise NotImplementedError
 

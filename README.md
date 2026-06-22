@@ -11,6 +11,7 @@ displays can be added later.
 ## Initial hardware
 
 - 52Pi EP-0164 breadboard kit, 320×240 ILI9341 TFT
+- Pimoroni Pico Display Pack 2.0, 320×240 ST7789 IPS display
 - Freenove/HD44780 1602 character LCD with PCF8574 I²C backpack
 - Freenove/HD44780 2004 character LCD with PCF8574 I²C backpack
 - USB serial terminal or plain serial log output
@@ -23,6 +24,7 @@ is copied into this repository.
 
 - Declarative display-specific page profiles in `config.py`
 - EP-0164 portrait, landscape, and 180-degree flipped orientations
+- Pico Display Pack 2.0 native graphics, onboard controls, and RGB status LED
 - Per-page rotation durations
 - Optional previous, next, home, and pause buttons
 - Config-derived retained MQTT subscriptions
@@ -104,6 +106,7 @@ Available profiles are:
 examples/config_ep0164.py
 examples/config_freenove_1602.py
 examples/config_freenove_2004.py
+examples/config_pico_display_2.py
 examples/config_serial.py
 ```
 
@@ -230,6 +233,43 @@ The flipped variants rotate the selected portrait or landscape layout by 180
 degrees. In a handwritten config, `DEVICE.rotation` accepts `0`, `1`, `2`, or
 `3` respectively.
 
+## Pico Display Pack 2.0
+
+This profile requires the official
+[Pimoroni Pico W MicroPython firmware](https://github.com/pimoroni/pimoroni-pico/releases/latest),
+which supplies the `picographics` and `pimoroni` modules. The driver uses the
+PicoGraphics 4-bit palette mode to keep the 320×240 framebuffer small enough
+for the weather client.
+
+Generate and deploy a landscape configuration with:
+
+```bash
+python3 tools/generate_config.py \
+  --profile pico-display-2 \
+  --orientation landscape \
+  --mqtt-host 192.168.1.10 \
+  --mqtt-client-id weather-cal-display-1 \
+  --wifi-ssid your-wifi \
+  --wifi-password your-password \
+  --deploy
+```
+
+Use `--orientation landscape-flipped` to rotate the display by 180 degrees.
+The default onboard controls are:
+
+```text
+A / GP12  home
+B / GP13  pause
+X / GP14  previous
+Y / GP15  next
+```
+
+The RGB LED reports client state: blue while connecting, green online, amber
+for stale weather, purple while page rotation is paused, and red for an
+offline/error state. Error takes priority over stale, which takes priority
+over paused. `DEVICE.backlight` accepts a value from `0.0` to `1.0` and
+defaults to `0.7`. Each physical client must use a unique MQTT client ID.
+
 ## Development
 
 Host tests require only CPython:
@@ -251,6 +291,7 @@ commands, reconnect behavior, and stale data.
 - Wi-Fi and broker interruptions recover without reboot.
 - Character LCD output remains within physical dimensions.
 - The TFT renders current conditions, icons, and forecast pages.
+- Pico Display Pack 2.0 buttons, backlight, and RGB status states work.
 - Long-running operation does not show sustained memory loss.
 
 ## License

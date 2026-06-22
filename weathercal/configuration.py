@@ -1,4 +1,4 @@
-DISPLAY_TYPES = ("ili9341", "hd44780", "serial")
+DISPLAY_TYPES = ("ili9341", "pico_display_2", "hd44780", "serial")
 BUTTON_ACTIONS = ("previous", "next", "home", "pause")
 
 
@@ -18,6 +18,12 @@ def validate_config(config):
         raise ConfigError("unsupported DEVICE.driver: {}".format(display_type))
     if display_type == "ili9341" and device.get("rotation", 1) not in (0, 1, 2, 3):
         raise ConfigError("DEVICE.rotation must be 0, 1, 2, or 3")
+    if display_type == "pico_display_2":
+        if device.get("rotation", 0) not in (0, 180):
+            raise ConfigError("DEVICE.rotation must be 0 or 180")
+        backlight = device.get("backlight", 0.7)
+        if not isinstance(backlight, (int, float)) or not 0 <= backlight <= 1:
+            raise ConfigError("DEVICE.backlight must be from 0.0 to 1.0")
     if display_type == "hd44780":
         transport = device.get("transport", "gpio")
         if transport not in ("gpio", "pcf8574"):
@@ -99,7 +105,7 @@ def _validate_widget(widget, display_type, page_id):
         raise ConfigError(
             "page {} has unsupported widget {}".format(page_id, widget_type)
         )
-    if display_type == "ili9341":
+    if display_type in ("ili9341", "pico_display_2"):
         for key in ("x", "y"):
             if key not in widget:
                 raise ConfigError(
