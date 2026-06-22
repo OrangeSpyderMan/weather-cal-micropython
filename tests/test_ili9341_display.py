@@ -112,7 +112,7 @@ class Ili9341DisplayTests(unittest.TestCase):
                 "widgets": [
                     {
                         "type": "weather_alert",
-                        "x": 278,
+                        "x": 254,
                         "y": 12,
                         "scale": 2,
                         "color": "red",
@@ -123,6 +123,6 @@ class Ili9341DisplayTests(unittest.TestCase):
         )
 
         self.assertIn(
-            ("text", 278, 12, "/!\\", 63488, 2),
+            ("text", 254, 12, "ALERT", 63488, 2),
             surface.commands,
         )

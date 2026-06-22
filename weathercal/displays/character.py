@@ -3,6 +3,9 @@ from ..formatters import percent, temperature
 from ..icons import LCD_GLYPHS, icon_text, semantic_icon
 
 
+ALERT_MARKER = "ALERT"
+
+
 class CharacterDisplay(Display):
     def __init__(self, lcd, columns, rows):
         self.lcd = lcd
@@ -34,7 +37,7 @@ class CharacterDisplay(Display):
         if width is None:
             width = self.columns - widget.get("col", 0)
         value = " ".join(pieces)
-        if pieces and pieces[-1] == "/!\\" and len(value) > width:
+        if pieces and pieces[-1] == ALERT_MARKER and len(value) > width:
             pieces = list(pieces)
             temperature_text = pieces[0]
             if (
@@ -50,9 +53,12 @@ class CharacterDisplay(Display):
                 except ValueError:
                     pass
             value = " ".join(pieces)
-        if pieces and pieces[-1] == "/!\\" and len(value) > width:
-            body_width = max(0, width - 4)
-            value = "{} /!\\".format(" ".join(pieces[:-1])[:body_width])
+        if pieces and pieces[-1] == ALERT_MARKER and len(value) > width:
+            body_width = max(0, width - len(ALERT_MARKER) - 1)
+            value = "{} {}".format(
+                " ".join(pieces[:-1])[:body_width],
+                ALERT_MARKER,
+            )
         self._write(
             widget.get("row", 0),
             widget.get("col", 0),

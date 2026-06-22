@@ -61,7 +61,7 @@ LANDSCAPE_PAGES = [
                 },
                 {
                     "type": "weather_alert",
-                    "x": 278,
+                    "x": 254,
                     "y": 12,
                     "scale": 2,
                     "color": "red",
@@ -107,7 +107,7 @@ LANDSCAPE_PAGES = [
             "widgets": [
                 {
                     "type": "text",
-                    "text": "NEXT HOURS",
+                    "text": "FORECAST",
                     "x": 12,
                     "y": 10,
                     "scale": 3,
@@ -164,7 +164,7 @@ PORTRAIT_PAGES = [
             },
             {
                 "type": "weather_alert",
-                "x": 198,
+                "x": 174,
                 "y": 14,
                 "scale": 2,
                 "color": "red",
@@ -210,7 +210,7 @@ PORTRAIT_PAGES = [
         "widgets": [
             {
                 "type": "text",
-                "text": "NEXT HOURS",
+                "text": "FORECAST",
                 "x": 12,
                 "y": 12,
                 "scale": 3,

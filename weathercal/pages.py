@@ -3,7 +3,7 @@ from .icons import icon_text, semantic_icon
 from .topics import page_dependencies
 
 
-ALERT_MARKER = "/!\\"
+ALERT_MARKER = "ALERT"
 
 
 class PageRenderer:

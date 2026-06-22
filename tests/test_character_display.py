@@ -116,7 +116,7 @@ class CharacterDisplayTests(unittest.TestCase):
             state,
         )
 
-        self.assertEqual(lcd.rows[0], "-1000C STORM /!\\")
+        self.assertEqual(lcd.rows[0], "-1000C STO ALERT")
 
     def test_2004_hourly_golden_buffer(self):
         lcd = FakeLCD()
