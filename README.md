@@ -52,6 +52,13 @@ server/status
 
 Only topics required by the selected page profile are subscribed.
 
+By default the client uses `RUNTIME.message_mode = "poll"` and checks the
+local MQTT socket every `RUNTIME.loop_sleep_ms`. Plugged-in displays can use
+`RUNTIME.message_mode = "event"` to wait on subscribed MQTT messages and
+redraw as soon as new data arrives. Event mode still wakes for page rotation,
+button handling, diagnostics/status publishes, reconnects, and forced refreshes;
+`RUNTIME.event_wait_ms` caps the idle MQTT wait between those deadlines.
+
 Clients also publish operational diagnostics when `MQTT.diagnostics.enabled`
 is true:
 
@@ -135,7 +142,7 @@ device image must support switching display types without redeployment.
 
 - `DEVICE`: driver, dimensions, pins, orientation, and selected page profile
 - `MQTT`: broker, base topic, client ID, keepalive, and reconnect limits
-- `RUNTIME`: page duration, redraw timing, stale threshold, and loop timing
+- `RUNTIME`: page duration, redraw timing, stale threshold, and message timing
 - `BUTTONS`: optional action-to-pin mappings
 - `PAGE_PROFILES`: display-specific page and widget definitions
 
@@ -235,11 +242,14 @@ degrees. In a handwritten config, `DEVICE.rotation` accepts `0`, `1`, `2`, or
 
 ## Pico Display Pack 2.0
 
-This profile requires the official
-[Pimoroni Pico W MicroPython firmware](https://github.com/pimoroni/pimoroni-pico/releases/latest),
-which supplies the `picographics` and `pimoroni` modules. The driver uses the
-PicoGraphics 4-bit palette mode to keep the 320×240 framebuffer small enough
-for the weather client.
+This profile requires Pimoroni MicroPython firmware, which supplies the
+`picographics` and `pimoroni` modules. Use the
+[Pimoroni Pico firmware](https://github.com/pimoroni/pimoroni-pico/releases/latest)
+for RP2040 Pico W boards, or the
+[Pimoroni RP2350 firmware](https://github.com/pimoroni/pimoroni-pico-rp2350/releases/latest)
+`rpi_pico2_w-...-micropython.uf2` build for a standard Raspberry Pi Pico 2 W.
+The driver uses the PicoGraphics 4-bit palette mode to keep the 320×240
+framebuffer small enough for the weather client.
 
 Generate and deploy a landscape configuration with:
 

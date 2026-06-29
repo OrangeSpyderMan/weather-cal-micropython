@@ -27,6 +27,8 @@ RUNTIME = {
     "forced_refresh_s": 300,
     "stale_after_s": 14400,
     "button_debounce_ms": 180,
+    "message_mode": "event",
+    "event_wait_ms": 1000,
     "loop_sleep_ms": 50,
 }
 

@@ -82,16 +82,17 @@ class WeatherCalApp:
             ),
         )
         while True:
-            self.step()
-            sleep_ms(self.config["RUNTIME"].get("loop_sleep_ms", 50))
+            self.step(wait=True)
+            if self._message_mode() == "poll":
+                sleep_ms(self.config["RUNTIME"].get("loop_sleep_ms", 50))
 
-    def step(self):
+    def step(self, wait=False):
         now = self.now_ms()
         if not self.connected and ticks_diff(now, self.next_reconnect) >= 0:
             self._connect()
         if self.connected:
             try:
-                self.client.check_msg()
+                self._receive_message(now, wait)
             except Exception as exc:
                 self._offline(exc)
         if self.scheduler.update(now):
@@ -167,6 +168,49 @@ class WeatherCalApp:
         if name and self.state.update(name, payload):
             self.dirty_pages.update(pages_affected(self.pages, name))
             self.status_dirty = True
+
+    def _receive_message(self, now, wait):
+        if self._message_mode() == "event":
+            self.client.wait_msg(self._event_wait_ms(now) if wait else 0)
+        else:
+            self.client.check_msg()
+
+    def _message_mode(self):
+        return self.config["RUNTIME"].get("message_mode", "poll")
+
+    def _event_wait_ms(self, now):
+        runtime = self.config["RUNTIME"]
+        timeout = int(runtime.get("event_wait_ms", 1000))
+        if self.buttons:
+            timeout = min(timeout, int(runtime.get("loop_sleep_ms", 50)))
+        deadlines = [self.scheduler.deadline]
+        deadlines.append(
+            ticks_add(
+                self.last_forced_draw,
+                int(runtime["forced_refresh_s"] * 1000),
+            )
+        )
+        if self.dirty_pages:
+            deadlines.append(
+                ticks_add(
+                    self.last_draw,
+                    int(runtime["redraw_coalesce_ms"]),
+                )
+            )
+        if self._diagnostics_enabled():
+            settings = self.config["MQTT"].get("diagnostics", {})
+            deadlines.append(
+                ticks_add(
+                    self.last_status,
+                    int(settings.get("status_interval_s", 300) * 1000),
+                )
+            )
+        for deadline in deadlines:
+            remaining = ticks_diff(deadline, now)
+            if remaining <= 0:
+                return 0
+            timeout = min(timeout, remaining)
+        return max(0, timeout)
 
     def _handle_buttons(self, now):
         if not self.buttons:

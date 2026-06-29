@@ -65,3 +65,10 @@ class ConfigurationTests(unittest.TestCase):
         config["DEVICE"]["backlight"] = 1.5
         with self.assertRaisesRegex(ConfigError, "backlight"):
             validate_config(config)
+
+    def test_rejects_invalid_message_mode(self):
+        config = self.load("config_pico_display_2.py")
+        config["RUNTIME"]["message_mode"] = "stream"
+
+        with self.assertRaisesRegex(ConfigError, "message_mode"):
+            validate_config(config)

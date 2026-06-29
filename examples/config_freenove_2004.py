@@ -36,6 +36,7 @@ RUNTIME = {
     "forced_refresh_s": 180,
     "stale_after_s": 14400,
     "button_debounce_ms": 180,
+    "message_mode": "poll",
     "loop_sleep_ms": 50,
 }
 

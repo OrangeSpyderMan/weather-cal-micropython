@@ -53,6 +53,11 @@ def validate_config(config):
     _positive(runtime, "stale_after_s")
     _positive(runtime, "forced_refresh_s")
     _positive(runtime, "redraw_coalesce_ms")
+    mode = runtime.get("message_mode", "poll")
+    if mode not in ("poll", "event"):
+        raise ConfigError("RUNTIME.message_mode must be poll or event")
+    if mode == "event":
+        _positive(runtime, "event_wait_ms", default=1000)
 
     buttons = config["BUTTONS"]
     for action, spec in buttons.items():

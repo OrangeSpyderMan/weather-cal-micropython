@@ -9,12 +9,13 @@ class RecordingSocket:
     def __init__(self):
         self.writes = []
         self.reads = bytearray(b"\x20\x02\x00\x00")
+        self.timeouts = []
 
     def write(self, value):
         self.writes.append(value)
 
     def settimeout(self, value):
-        pass
+        self.timeouts.append(value)
 
     def connect(self, address):
         pass
@@ -59,3 +60,30 @@ class MQTTClientTests(unittest.TestCase):
         self.assertEqual(packet[9], 0x26)
         self.assertIn(b"base/clients/screen/status", packet)
         self.assertIn(b'{"state":"offline"}', packet)
+
+    def test_wait_msg_uses_timeout_and_dispatches_publish(self):
+        sock = RecordingSocket()
+        sock.reads = bytearray(
+            b"\x30\x18"
+            b"\x00\x0cbase/current"
+            b'{"temp":9}'
+        )
+        received = []
+        client = MQTTClient("client", "broker")
+        client.socket = sock
+        client.set_callback(lambda topic, payload: received.append((topic, payload)))
+
+        client.wait_msg(timeout_ms=250)
+
+        self.assertEqual(sock.timeouts, [0.25, 0])
+        self.assertEqual(received, [(b"base/current", b'{"temp":9}')])
+
+    def test_wait_msg_zero_uses_nonblocking_receive(self):
+        sock = RecordingSocket()
+        sock.reads = bytearray()
+        client = MQTTClient("client", "broker")
+        client.socket = sock
+
+        client.wait_msg(timeout_ms=0)
+
+        self.assertEqual(sock.timeouts, [])

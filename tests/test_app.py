@@ -60,6 +60,8 @@ class FakeMQTT:
         self.disconnected = False
         self.kwargs = kwargs
         self.publications = []
+        self.checks = 0
+        self.waits = []
         FakeMQTT.instances.append(self)
 
     def set_callback(self, callback):
@@ -75,7 +77,10 @@ class FakeMQTT:
         self.publications.append((topic, payload, retain))
 
     def check_msg(self):
-        pass
+        self.checks += 1
+
+    def wait_msg(self, timeout_ms=None):
+        self.waits.append(timeout_ms)
 
     def disconnect(self):
         self.disconnected = True
@@ -218,6 +223,61 @@ class AppTests(unittest.TestCase):
 
         self.assertEqual(app.state.get("current.temperature.value"), 9)
         self.assertEqual(app.dirty_pages, {"now"})
+
+    def test_poll_mode_checks_mqtt_without_waiting(self):
+        clock = [0]
+        app = WeatherCalApp(
+            config(),
+            {"WIFI_SSID": "wifi", "WIFI_PASSWORD": "secret"},
+            display=FakeDisplay(),
+            mqtt_factory=FakeMQTT,
+            network_factory=FakeNetwork,
+            now_ms=lambda: clock[0],
+        )
+
+        app.step()
+
+        client = FakeMQTT.instances[0]
+        self.assertEqual(client.checks, 1)
+        self.assertEqual(client.waits, [])
+
+    def test_event_mode_waits_for_mqtt_until_next_deadline(self):
+        settings = config()
+        settings["RUNTIME"]["message_mode"] = "event"
+        settings["RUNTIME"]["event_wait_ms"] = 1000
+        settings["RUNTIME"]["redraw_coalesce_ms"] = 250
+        clock = [0]
+        app = WeatherCalApp(
+            settings,
+            {"WIFI_SSID": "wifi", "WIFI_PASSWORD": "secret"},
+            display=FakeDisplay(),
+            mqtt_factory=FakeMQTT,
+            network_factory=FakeNetwork,
+            now_ms=lambda: clock[0],
+        )
+
+        app.step(wait=True)
+
+        client = FakeMQTT.instances[0]
+        self.assertEqual(client.checks, 0)
+        self.assertEqual(client.waits[-1], 250)
+
+    def test_event_mode_without_wait_does_not_block_unit_steps(self):
+        settings = config()
+        settings["RUNTIME"]["message_mode"] = "event"
+        settings["RUNTIME"]["event_wait_ms"] = 1000
+        app = WeatherCalApp(
+            settings,
+            {"WIFI_SSID": "wifi", "WIFI_PASSWORD": "secret"},
+            display=FakeDisplay(),
+            mqtt_factory=FakeMQTT,
+            network_factory=FakeNetwork,
+            now_ms=lambda: 0,
+        )
+
+        app.step()
+
+        self.assertEqual(FakeMQTT.instances[0].waits[-1], 0)
 
     def test_reconnect_backoff_is_bounded(self):
         class BrokenMQTT(FakeMQTT):

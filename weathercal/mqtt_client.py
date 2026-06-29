@@ -87,16 +87,30 @@ class MQTTClient:
         self._write_packet(header, _field(_bytes(topic)) + _bytes(payload))
 
     def check_msg(self):
+        self._receive(nonblocking=True)
+
+    def wait_msg(self, timeout_ms=None):
+        if timeout_ms is not None and timeout_ms <= 0:
+            self._receive(nonblocking=True)
+            return
+        self._receive(nonblocking=False, timeout_ms=timeout_ms)
+
+    def _receive(self, nonblocking=False, timeout_ms=None):
         if not self.socket:
             raise MQTTError("MQTT is disconnected")
+        if not nonblocking and timeout_ms is not None:
+            self.socket.settimeout(max(0, timeout_ms) / 1000)
         try:
-            packet_type, payload = self._read_packet(nonblocking=True)
+            packet_type, payload = self._read_packet(nonblocking=nonblocking)
         except OSError as exc:
             if _would_block(exc):
                 packet_type = None
                 payload = None
             else:
                 raise
+        finally:
+            if not nonblocking and timeout_ms is not None:
+                self.socket.settimeout(0)
         if packet_type == 0x30 and payload is not None:
             length = struct.unpack("!H", payload[:2])[0]
             topic = payload[2 : 2 + length]
@@ -119,20 +133,26 @@ class MQTTClient:
             if nonblocking:
                 raise OSError(11)
             raise MQTTError("MQTT connection closed")
+        if nonblocking:
+            self.socket.settimeout(1)
         multiplier = 1
         remaining = 0
-        while True:
-            encoded = self.socket.read(1)
-            if not encoded:
-                raise MQTTError("truncated MQTT packet")
-            value = encoded[0]
-            remaining += (value & 127) * multiplier
-            if value & 128 == 0:
-                break
-            multiplier *= 128
-        payload = _read_exact(self.socket, remaining)
-        self.last_io = ticks_ms()
-        return first[0] & 0xF0, payload
+        try:
+            while True:
+                encoded = self.socket.read(1)
+                if not encoded:
+                    raise MQTTError("truncated MQTT packet")
+                value = encoded[0]
+                remaining += (value & 127) * multiplier
+                if value & 128 == 0:
+                    break
+                multiplier *= 128
+            payload = _read_exact(self.socket, remaining)
+            self.last_io = ticks_ms()
+            return first[0] & 0xF0, payload
+        finally:
+            if nonblocking:
+                self.socket.settimeout(0)
 
 
 def _field(value):
