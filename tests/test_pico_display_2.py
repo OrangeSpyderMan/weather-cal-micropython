@@ -158,6 +158,24 @@ class PicoDisplay2Tests(unittest.TestCase):
             ],
         )
 
+    def test_icons_use_weather_appropriate_default_colors(self):
+        graphics = FakeGraphics()
+        display = PicoDisplay2Display(graphics)
+
+        display.icon({"x": 0, "y": 0, "scale": 1}, "clear")
+        display.icon({"x": 0, "y": 0, "scale": 1}, "cloud")
+        display.icon({"x": 0, "y": 0, "scale": 1}, "rain")
+        display.icon(
+            {"x": 0, "y": 0, "scale": 1, "color": "red"},
+            "cloud",
+        )
+
+        pens = [item for item in graphics.commands if item[0] == "pen"]
+        self.assertIn(("pen", (255, 210, 0)), pens)
+        self.assertIn(("pen", (255, 255, 255)), pens)
+        self.assertIn(("pen", (190, 205, 215)), pens)
+        self.assertEqual(pens[-1], ("pen", (255, 48, 48)))
+
     def test_missing_pimoroni_modules_reports_firmware_requirement(self):
         with mock.patch.dict(
             sys.modules,

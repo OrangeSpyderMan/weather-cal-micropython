@@ -8,11 +8,24 @@ RGB = {
     "white": (255, 255, 255),
     "cyan": (0, 220, 255),
     "yellow": (255, 210, 0),
+    "light_grey": (190, 205, 215),
     "red": (255, 48, 48),
     "green": (40, 220, 100),
     "navy": (5, 18, 42),
     "panel": (14, 38, 68),
     "muted": (120, 160, 190),
+}
+
+ICON_COLORS = {
+    "clear": "yellow",
+    "partly": "yellow",
+    "cloud": "white",
+    "rain": "light_grey",
+    "storm": "light_grey",
+    "snow": "white",
+    "fog": "light_grey",
+    "wind": "light_grey",
+    "weather": "white",
 }
 
 INDICATORS = {
@@ -63,7 +76,7 @@ class PicoDisplay2Display(Display):
             widget.get("y", 0),
             name,
             widget.get("scale", 2),
-            widget.get("color", "yellow"),
+            widget.get("color"),
         )
 
     def summary(self, widget, pieces):
@@ -82,7 +95,7 @@ class PicoDisplay2Display(Display):
                 widget.get("width", self.width - x),
                 row_height - 4,
             )
-            self._draw_icon(x + 6, y + 5, item.get("icon", ""), 1, "yellow")
+            self._draw_icon(x + 6, y + 5, item.get("icon", ""), 1, None)
             stamp = item.get("dt", "")
             hour = stamp[11:16] if len(stamp) >= 16 else "--:--"
             self._draw_text(hour, x + 28, y + 5, 2, "cyan", 82)
@@ -138,10 +151,11 @@ class PicoDisplay2Display(Display):
         self.graphics.text(str(value), x, y, width, scale)
 
     def _draw_icon(self, x, y, name, scale, color):
-        pattern = BITMAPS.get(semantic_icon(name), BITMAPS.get("cloud"))
+        icon = semantic_icon(name)
+        pattern = BITMAPS.get(icon, BITMAPS.get("cloud"))
         if not pattern:
             return
-        self._pen(color)
+        self._pen(color or ICON_COLORS.get(icon, "white"))
         for row, bits in enumerate(pattern):
             for column, bit in enumerate(bits):
                 if bit == "#":
